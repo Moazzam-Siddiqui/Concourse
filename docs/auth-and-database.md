@@ -6,7 +6,7 @@ How accounts and persistence work, and what to set when deploying.
 
 | | Local | Cloud |
 |---|---|---|
-| Database | H2 file at `backend/data/crowdflow.mv.db` | Postgres |
+| Database | H2 file at `backend/data/concourse.mv.db` | Postgres |
 | Schema | Flyway, `src/main/resources/db/migration` | same migrations |
 | Auth | Self-hosted JWT | Self-hosted JWT, and/or Supabase, and/or Firebase |
 
@@ -185,7 +185,7 @@ Local development needs none. For deployment:
 SPRING_PROFILES_ACTIVE=cloud
 
 # Database (required)
-DB_URL=jdbc:postgresql://host:5432/crowdflow
+DB_URL=jdbc:postgresql://host:5432/concourse
 DB_USERNAME=...
 DB_PASSWORD=...
 

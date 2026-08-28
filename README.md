@@ -1,8 +1,6 @@
-# Crowd Flow Optimiser
+# Concourse
 
-![Crowd Flow Optimiser — venue maps with live crowd density heatmaps and a before/after comparison](docs/img/crowd-flow-optimizer-board.png)
-
-**Geek Room AI Race Month · Grandprix — Problem Statement #3**
+![Concourse — venue maps with live crowd density heatmaps and a before/after comparison](docs/img/concourse-board.png)
 
 Simulate a venue, predict where the crowd will jam, and route around it — before the queue
 becomes a crush.
@@ -202,8 +200,8 @@ cd ai-service
 then in `ai-service/.env`:
 
 ```
-CROWDFLOW_GNN_REPO=abhi1005/congestion-gnn
-CROWDFLOW_ADVISORY_MODEL=Qwen/Qwen2.5-0.5B-Instruct
+CONCOURSE_GNN_REPO=abhi1005/congestion-gnn
+CONCOURSE_ADVISORY_MODEL=Qwen/Qwen2.5-0.5B-Instruct
 ```
 
 `GET /health` reports which of the two actually loaded, and why if either did not.
@@ -215,7 +213,7 @@ about to be pushed over by the concourse next to it." It exists so a clean check
 no setup at all.
 
 To make hosted inference mandatory, so a bad token fails loudly instead of silently falling
-back, set `CROWDFLOW_LOCAL_FALLBACK=false`.
+back, set `CONCOURSE_LOCAL_FALLBACK=false`.
 
 ### The feature contract
 

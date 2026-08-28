@@ -23,7 +23,7 @@ docker compose up --build
 | Frontend | <http://localhost:5173> |
 | Backend | <http://localhost:8080/health> |
 | AI service | <http://localhost:8000/health> |
-| Postgres | `localhost:5432` (`crowdflow` / `crowdflow`) |
+| Postgres | `localhost:5432` (`concourse` / `concourse`) |
 
 This runs the backend under its **cloud profile against Postgres**, which is the shape a real
 deployment has. Running it locally with `./mvnw spring-boot:run` instead uses the H2 file and
@@ -43,7 +43,7 @@ Everything is optional — the defaults boot. Put overrides in a `.env` next to
 `docker-compose.yml`; see [`.env.docker.example`](../.env.docker.example).
 
 ```bash
-DB_PASSWORD=...              # default: crowdflow-local-only
+DB_PASSWORD=...              # default: concourse-local-only
 AUTH_JWT_SECRET=...          # default: a laptop-only string
 AUTH_ADMIN_EMAILS=you@example.com   # default: empty, so no admin exists
 AUTH_ADMIN_PASSWORD=...      # 8+ chars, a letter and a number; seeds the admin at boot

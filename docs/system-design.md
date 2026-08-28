@@ -10,7 +10,7 @@ spot the pile-up before it forms, and say where to send people instead.
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │  React (Vite) · port 5173                                        │
-│  CrowdFlowApp.jsx — landing, access, and three role portals      │
+│  ConcourseApp.jsx — landing, access, and three role portals      │
 │  LayoutStudio.jsx — floor plan → walkable graph                  │
 │  api.js  REST + bearer token   ·  useLiveSession.js  WebSocket   │
 │  crowdRouting.js — the attendee route, planned around the crowd  │

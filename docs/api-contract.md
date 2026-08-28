@@ -386,7 +386,7 @@ Uploads a venue layout. `id` is optional — one is generated when omitted.
 ```json
 {
   "id": "venue-sample",
-  "name": "Grandprix Arena — North Wing",
+  "name": "Northgate Arena — North Wing",
   "nodes": [
     { "id": "gate-a", "name": "Gate A", "type": "GATE", "capacity": 320, "x": 60, "y": 120 }
   ],

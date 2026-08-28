@@ -1,10 +1,4 @@
-# Crowd Flow Optimiser — Project Plan
-
-**Event:** Geek Room AI Race Month · Grandprix
-**Problem Statement:** #3 — Crowd Flow Optimiser
-**Team deadline:** Aug 10 (offline round)
-
----
+# Concourse — Project Plan
 
 ## 1. The Problem
 
@@ -36,9 +30,9 @@ likely to break on stage: a cold inference endpoint and the venue wifi.
 
 ---
 
-## 3. What Makes This "Genuine AI Work," Not Just Rules + an API Call
+## 3. Where AI Earns Its Place, and Where It Does Not
 
-The hackathon's balanced-difficulty rule means we can't lean purely on hand-rolled logic (too basic) or purely on calling one pretrained model (too easy). Our split:
+Not everything here should be a model. The split below is deliberate — forcing AI into a solved algorithmic problem costs accuracy and speed for nothing, while a threshold check cannot answer the questions that actually matter:
 
 - **Classic algorithms** (not AI, and shouldn't be): the crowd simulation engine and shortest-path rerouting. These are deterministic and fast — trying to force AI into them would waste time for no payoff.
 - **Genuine AI, via Hugging Face** (this is where depth lives):
@@ -178,7 +172,7 @@ doing would be worse than none.
 ## 8. Project Structure
 
 ```
-crowd-flow-optimiser/
+concourse/
 ├── frontend/        # React website (+ src/assets/pixel-art/ tileset and sprites)
 ├── backend/         # Spring Boot
 ├── ai-service/      # FastAPI self-hosted model serving (port 8000)
