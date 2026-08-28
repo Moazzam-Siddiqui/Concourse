@@ -27,8 +27,8 @@ RUN pip install --no-cache-dir -r requirements.txt \
 
 COPY app ./app
 
-RUN useradd --create-home --uid 1001 crowdflow && chown -R crowdflow:crowdflow /app
-USER crowdflow
+RUN useradd --create-home --uid 1001 concourse && chown -R concourse:concourse /app
+USER concourse
 
 EXPOSE 8000
 

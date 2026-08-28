@@ -76,7 +76,7 @@ async def analyze(request: AnalyzeRequest):
         if not gnn_result.ok:
             log.warning("hosted GNN failed, falling back: %s", gnn_result.error)
 
-    # TinyBERT sits ahead of the trained GNN because it is off unless CROWDFLOW_TINYBERT is
+    # TinyBERT sits ahead of the trained GNN because it is off unless CONCOURSE_TINYBERT is
     # explicitly set: someone who turned it on wants it answering, not shadowed by a checkpoint
     # that happens to be on disk. Left unset — the default — this branch never runs.
     if not gnn_result.ok and tinybert_risk.ready:

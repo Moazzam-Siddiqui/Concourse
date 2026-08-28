@@ -51,8 +51,8 @@ class Placement {
       );
 }
 
-class CrowdFlowApi {
-  CrowdFlowApi({required this.baseUrl, http.Client? client})
+class ConcourseApi {
+  ConcourseApi({required this.baseUrl, http.Client? client})
       : _client = client ?? http.Client();
 
   final String baseUrl;

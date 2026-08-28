@@ -26,7 +26,7 @@ globalThis.document = { hidden: false, addEventListener() {}, removeEventListene
 globalThis.IntersectionObserver = class { observe() {} unobserve() {} disconnect() {} };
 globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };
 
-const { VenueMap, RouteBanner, RouteSteps, HazardAlerts } = await import('./CrowdFlowApp.jsx');
+const { VenueMap, RouteBanner, RouteSteps, HazardAlerts } = await import('./ConcourseApp.jsx');
 const { toMapVenue, applyFrame } = await import('./src/venueAdapter.js');
 const { planRoute, rankHazards } = await import('./src/crowdRouting.js');
 

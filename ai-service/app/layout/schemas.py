@@ -5,11 +5,11 @@ Two distinct shapes live here and it matters which is which:
 * ``SemanticLayout`` — what the VLM returns. Approximate, hint-quality, never trusted
   for geometry. Coordinates here are suggestions the CV stage validates or discards.
 * ``VenueGraph`` — the canonical output. Field names deliberately match
-  ``com.crowdflow.model.VenueNode`` / ``VenueEdge`` so Spring's existing Jackson
+  ``com.concourse.model.VenueNode`` / ``VenueEdge`` so Spring's existing Jackson
   binding and ``VenueValidator`` accept it with no adapter in between.
 
 If you change a field name in ``GraphNode``/``GraphEdge``, you have broken the Spring
-contract. Check ``backend/src/main/java/com/crowdflow/model/`` before editing.
+contract. Check ``backend/src/main/java/com/concourse/model/`` before editing.
 """
 
 from __future__ import annotations
@@ -139,7 +139,7 @@ NodeType = Literal["GATE", "WALKWAY", "CONCESSION", "SEATING", "EXIT"]
 
 
 class GraphNode(BaseModel):
-    """Mirrors ``com.crowdflow.model.VenueNode``."""
+    """Mirrors ``com.concourse.model.VenueNode``."""
 
     id: str
     name: str
@@ -150,7 +150,7 @@ class GraphNode(BaseModel):
 
 
 class GraphEdge(BaseModel):
-    """Mirrors ``com.crowdflow.model.VenueEdge``.
+    """Mirrors ``com.concourse.model.VenueEdge``.
 
     ``length`` is the Dijkstra weight and ``width`` caps throughput per tick, so both
     must be positive — a zero-length edge makes every route through it free.

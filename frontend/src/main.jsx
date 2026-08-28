@@ -1,10 +1,10 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import CrowdFlowApp from '../CrowdFlowApp.jsx';
+import ConcourseApp from '../ConcourseApp.jsx';
 import './styles/index.css';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <CrowdFlowApp />
+    <ConcourseApp />
   </React.StrictMode>,
 );

@@ -166,7 +166,7 @@ test('venue codes reject what cannot go on a sign', () => {
 });
 
 test('suggests a short code from a venue name', () => {
-  assert.equal(suggestCode('Grandprix Arena — North Wing'), 'GRANDPRIX-ARENA');
+  assert.equal(suggestCode('Northgate Arena — North Wing'), 'NORTHGATE-ARENA');
   assert.equal(suggestCode(''), 'VENUE-01');
 });
 

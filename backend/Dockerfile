@@ -25,14 +25,14 @@ WORKDIR /app
 
 # Non-root. A container that only needs to read a jar and open a socket has no use for root,
 # and this is the cheapest possible limit on what a compromise is worth.
-RUN addgroup -S crowdflow && adduser -S -G crowdflow crowdflow
+RUN addgroup -S concourse && adduser -S -G concourse concourse
 
-COPY --from=build /build/target/crowd-flow-optimiser-*.jar app.jar
+COPY --from=build /build/target/concourse-*.jar app.jar
 
 # Writable for the default profile, which keeps its H2 file under ./data. The cloud profile
 # used by docker-compose talks to Postgres and never touches this.
-RUN mkdir -p /app/data && chown -R crowdflow:crowdflow /app
-USER crowdflow
+RUN mkdir -p /app/data && chown -R concourse:concourse /app
+USER concourse
 
 EXPOSE 8080
 

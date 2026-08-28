@@ -46,7 +46,7 @@ class WalkerSession extends ChangeNotifier with WidgetsBindingObserver {
         _isServiceEnabled = isLocationServiceEnabled ?? Geolocator.isLocationServiceEnabled,
         _positionStream = positionStream ?? _defaultPositionStream;
 
-  final CrowdFlowApi api;
+  final ConcourseApi api;
   final String walkerId;
 
   // Injected so the permission and GPS paths are testable without a device or a mock framework.

@@ -1,4 +1,4 @@
-// CI/CD for the Crowd Flow Optimiser.
+// CI/CD for the Concourse.
 //
 // Runs on the Jenkins defined in ci/jenkins/ — an image that carries JDK 21, Maven, Node 22,
 // Python 3.11 and a Docker CLI. The toolchains are in the agent rather than in per-stage
@@ -22,7 +22,7 @@ pipeline {
     environment {
         // Per-build project name, so a smoke stack can never adopt or tear down the containers
         // from a developer's own `docker compose up` on the same machine.
-        COMPOSE_PROJECT_NAME = "crowdflow-ci-${env.BUILD_NUMBER}"
+        COMPOSE_PROJECT_NAME = "concourse-ci-${env.BUILD_NUMBER}"
 
         // Non-default host ports for the same reason: CI publishing on 8080 would collide with
         // the backend someone is running while they wait for this build.

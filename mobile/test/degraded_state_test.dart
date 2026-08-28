@@ -1,6 +1,6 @@
-import 'package:crowdflow_walker/api.dart';
-import 'package:crowdflow_walker/map_projection.dart';
-import 'package:crowdflow_walker/venue_map.dart';
+import 'package:concourse_walker/api.dart';
+import 'package:concourse_walker/map_projection.dart';
+import 'package:concourse_walker/venue_map.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -79,7 +79,7 @@ void main() {
   });
 
   group('densityColour', () {
-    /// Must agree with `densityColor` in frontend/CrowdFlowApp.jsx. An attendee who checks the
+    /// Must agree with `densityColor` in frontend/ConcourseApp.jsx. An attendee who checks the
     /// web map and then the app must not see one zone described two different ways.
     test('uses the same four thresholds as the web app', () {
       expect(densityColour(0.00), const Color(0xFF00C853));

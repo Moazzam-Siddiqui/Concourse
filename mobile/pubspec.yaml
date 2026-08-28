@@ -1,5 +1,5 @@
-name: crowdflow_walker
-description: Crowd Flow Optimiser — the attendee app. Live zone congestion and a way out.
+name: concourse_walker
+description: Concourse — the attendee app. Live zone congestion and a way out.
 publish_to: none
 version: 0.1.0
 

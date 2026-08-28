@@ -87,12 +87,12 @@ class LocalAdvisory:
         self.pipe = None
         self.ready = False
         self.error: str | None = None
-        self.model_id = os.environ.get("CROWDFLOW_ADVISORY_MODEL", DEFAULT_MODEL)
+        self.model_id = os.environ.get("CONCOURSE_ADVISORY_MODEL", DEFAULT_MODEL)
 
     def load(self) -> None:
         """Called once at startup. Never raises — /health reports whatever went wrong."""
-        if os.environ.get("CROWDFLOW_ADVISORY_LOCAL", "true").strip().lower() in ("0", "false", "no"):
-            self.error = "disabled by CROWDFLOW_ADVISORY_LOCAL"
+        if os.environ.get("CONCOURSE_ADVISORY_LOCAL", "true").strip().lower() in ("0", "false", "no"):
+            self.error = "disabled by CONCOURSE_ADVISORY_LOCAL"
             return
         try:
             from transformers import pipeline
@@ -130,7 +130,7 @@ class LocalAdvisory:
         ]
         out = self.pipe(
             messages,
-            max_new_tokens=int(os.environ.get("CROWDFLOW_ADVISORY_MAX_TOKENS", DEFAULT_MAX_NEW_TOKENS)),
+            max_new_tokens=int(os.environ.get("CONCOURSE_ADVISORY_MAX_TOKENS", DEFAULT_MAX_NEW_TOKENS)),
             do_sample=False,          # deterministic: the same crowd state gives the same advice
             return_full_text=False,
         )

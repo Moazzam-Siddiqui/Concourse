@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:crowdflow_walker/api.dart';
-import 'package:crowdflow_walker/walker_session.dart';
+import 'package:concourse_walker/api.dart';
+import 'package:concourse_walker/walker_session.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/testing.dart';
@@ -86,7 +86,7 @@ WalkerSession _session(
   bool servicesEnabled = true,
 }) =>
     WalkerSession(
-      api: CrowdFlowApi(baseUrl: 'http://venue.test', client: recorder.client()),
+      api: ConcourseApi(baseUrl: 'http://venue.test', client: recorder.client()),
       walkerId: 'w-1',
       checkPermission: () async => permission,
       requestPermission: () async => permission,
@@ -150,7 +150,7 @@ void main() {
     final recorder = _Recorder(georeferenced: false);
     var permissionAsked = false;
     final session = WalkerSession(
-      api: CrowdFlowApi(baseUrl: 'http://venue.test', client: recorder.client()),
+      api: ConcourseApi(baseUrl: 'http://venue.test', client: recorder.client()),
       walkerId: 'w-1',
       checkPermission: () async {
         permissionAsked = true;

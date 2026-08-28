@@ -1,4 +1,4 @@
-import 'package:crowdflow_walker/location_gate.dart';
+import 'package:concourse_walker/location_gate.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

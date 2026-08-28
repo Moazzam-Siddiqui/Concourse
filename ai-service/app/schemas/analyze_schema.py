@@ -1,6 +1,6 @@
 """Request/response models for POST /analyze.
 
-Mirrors the Java records in backend/src/main/java/com/crowdflow/dto/AnalyzeRequest.java and
+Mirrors the Java records in backend/src/main/java/com/concourse/dto/AnalyzeRequest.java and
 AnalyzeResponse.java. If you change a field name here, change it there — nothing checks.
 """
 

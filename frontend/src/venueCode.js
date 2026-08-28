@@ -47,7 +47,7 @@ export function codeError(code) {
 }
 
 /**
- * A suggested code from a venue's name: "Grandprix Arena — North Wing" -> "GRANDPRIX-ARENA".
+ * A suggested code from a venue's name: "Northgate Arena — North Wing" -> "NORTHGATE-ARENA".
  *
  * Two words, not the whole name, because the point is something short enough to print
  * large and read from a distance.

@@ -9,13 +9,13 @@ import 'walker_session.dart';
 
 /// Where the backend is. Override for a device on the same network:
 ///
-///   flutter run --dart-define=CROWDFLOW_API=http://192.168.1.20:8080
+///   flutter run --dart-define=CONCOURSE_API=http://192.168.1.20:8080
 ///
 /// A phone cannot reach the host's localhost, so this needs setting for any real test. It is a
 /// dart-define rather than a settings screen because it is a developer concern — an attendee at
 /// a venue never types a URL.
 const String kApiBase =
-    String.fromEnvironment('CROWDFLOW_API', defaultValue: 'http://10.0.2.2:8080');
+    String.fromEnvironment('CONCOURSE_API', defaultValue: 'http://10.0.2.2:8080');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,7 +32,7 @@ Future<void> main() async {
   runApp(WalkerApp(
     prefs: prefs,
     session: WalkerSession(
-      api: CrowdFlowApi(baseUrl: kApiBase),
+      api: ConcourseApi(baseUrl: kApiBase),
       walkerId: walkerId,
     ),
   ));
@@ -57,7 +57,7 @@ class _WalkerAppState extends State<WalkerApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Crowd Flow',
+      title: 'Concourse',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,

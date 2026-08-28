@@ -8,7 +8,7 @@
  * render — all of which are blank-screen bugs in the browser. Rendering each route
  * through react-dom/server does catch them, without needing a browser or a driver.
  *
- * The map/portal routes are deliberately not rendered here: they mount `useCrowdFlow`,
+ * The map/portal routes are deliberately not rendered here: they mount `useConcourse`,
  * which opens a WebSocket, so they need a live backend and belong in an integration
  * test rather than a smoke test.
  */
@@ -41,7 +41,7 @@ globalThis.ResizeObserver = class {
   observe() {} unobserve() {} disconnect() {}
 };
 
-const { default: CrowdFlowApp } = await import('./CrowdFlowApp.jsx');
+const { default: ConcourseApp } = await import('./ConcourseApp.jsx');
 
 const ROUTES = [
   '#/', '#/how', '#/platform', '#/intelligence', '#/results', '#/access',
@@ -56,7 +56,7 @@ let failed = 0;
 for (const route of ROUTES) {
   window.location.hash = route;
   try {
-    const html = renderToString(React.createElement(CrowdFlowApp));
+    const html = renderToString(React.createElement(ConcourseApp));
     if (!html || html.length < 200) throw new Error('rendered almost nothing');
     originalError(`  ok    ${route.padEnd(18)} ${html.length} chars`);
   } catch (cause) {

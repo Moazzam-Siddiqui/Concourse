@@ -3,7 +3,7 @@
  *
  *     npm test
  *
- * These deliberately mirror `backend/src/test/java/com/crowdflow/PasswordPolicyTest.java`
+ * These deliberately mirror `backend/src/test/java/com/concourse/PasswordPolicyTest.java`
  * case for case. The two implementations exist for different reasons — the server enforces,
  * the client explains — but a disagreement between them shows up as a form that accepts a
  * password the API then rejects, which is the failure worth catching here.

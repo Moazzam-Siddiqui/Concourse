@@ -1,6 +1,6 @@
 # AI Service
 
-The Python half of the Crowd Flow Optimiser. Predicts per-zone congestion risk and writes the
+The Python half of the Concourse. Predicts per-zone congestion risk and writes the
 operator advisory that goes with it.
 
 Called only by the Spring Boot backend — never by the browser.
@@ -29,7 +29,7 @@ No API token, no model download, no configuration. Swagger UI at
 recent history and the run context, and returns risk plus prose in a single round trip.
 
 Request and response shapes mirror the Java records in
-`backend/src/main/java/com/crowdflow/dto/AnalyzeRequest.java` and `AnalyzeResponse.java`.
+`backend/src/main/java/com/concourse/dto/AnalyzeRequest.java` and `AnalyzeResponse.java`.
 
 ---
 
@@ -41,7 +41,7 @@ LLM one gives hosted risk with locally written prose. Whichever answered is name
 
 1. **Hugging Face Inference API** — when `HF_API_TOKEN` and the matching `HF_*_URL` are set.
 2. **TinyBERT** ([`app/tinybert_local.py`](app/tinybert_local.py)) — risk only, and only when
-   `CROWDFLOW_TINYBERT=true`. See below.
+   `CONCOURSE_TINYBERT=true`. See below.
 3. **In-process models** — pulled from the Hub once at startup, run locally thereafter. This is
    the path the project plan calls for: Hugging Face as the model registry, not a per-request
    network dependency.
@@ -59,9 +59,9 @@ LLM one gives hosted risk with locally written prose. Whichever answered is name
 `ai-service/.env` currently pins the beta configuration — one model, nothing else:
 
 ```ini
-CROWDFLOW_TINYBERT=true       # huawei-noah/TinyBERT_General_4L_312D, ~55 MB, CPU
-CROWDFLOW_ADVISORY_LOCAL=false  # advisory comes from the templates
-# CROWDFLOW_GNN_REPO=abhi1005/congestion-gnn   # the trained GNN, parked
+CONCOURSE_TINYBERT=true       # huawei-noah/TinyBERT_General_4L_312D, ~55 MB, CPU
+CONCOURSE_ADVISORY_LOCAL=false  # advisory comes from the templates
+# CONCOURSE_GNN_REPO=abhi1005/congestion-gnn   # the trained GNN, parked
 ```
 
 TinyBERT is ported from the `Python Backend/` service that was deleted when the repo was
@@ -75,7 +75,7 @@ original's design, with two changes:
 
 - The raw half uses this service's tuned `scoring.WEIGHTS` over `FEATURE_COLUMNS`, not the
   original's eight separate fields, so every risk path here scores the same inputs the same way.
-- The embedding norm is divided by a fixed scale (`CROWDFLOW_TINYBERT_SCALE`), not by the batch
+- The embedding norm is divided by a fixed scale (`CONCOURSE_TINYBERT_SCALE`), not by the batch
   maximum. Dividing by the batch max made a zone's risk depend on which *other* zones were in
   the request — a one-node graph always maxed that term, and adding a calm zone moved every
   other zone's number. `tests/test_tinybert.py` pins that down.
@@ -145,7 +145,7 @@ cp .env.example .env    # then fill in HF_API_TOKEN and the HF_*_URL you want
 ```
 
 To make hosted inference mandatory — so a bad token returns 502 rather than quietly falling
-back — set `CROWDFLOW_LOCAL_FALLBACK=false`.
+back — set `CONCOURSE_LOCAL_FALLBACK=false`.
 
 ---
 

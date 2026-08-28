@@ -1,4 +1,4 @@
-"""Crowd Flow Optimiser — AI orchestration layer (FastAPI).
+"""Concourse — AI orchestration layer (FastAPI).
 
     uvicorn app.main:app --reload --port 8000
 
@@ -53,7 +53,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)-7s %(name)s | %(message)s",
     datefmt="%H:%M:%S",
 )
-log = logging.getLogger("crowdflow.ai")
+log = logging.getLogger("concourse.ai")
 
 
 @asynccontextmanager
@@ -87,7 +87,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Crowd Flow Optimiser — AI Service",
+    title="Concourse — AI Service",
     description=(
         "Predicts per-zone congestion risk and writes the operator advisory that goes with it. "
         "Called only by the Spring Boot backend."
@@ -136,7 +136,7 @@ def health() -> dict:
               or (config["hostedGnn"] and config["hostedLlm"]))
     return {
         "status": "ok" if usable else "degraded",
-        "service": "crowdflow-ai",
+        "service": "concourse-ai",
         "inference": {
             "gnn": "huggingface" if config["hostedGnn"]
                    else "tinybert" if tinybert_risk.ready

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'api.dart';
 import 'map_projection.dart';
 
-/// The congestion ramp, matching `densityColor` in `frontend/CrowdFlowApp.jsx` exactly.
+/// The congestion ramp, matching `densityColor` in `frontend/ConcourseApp.jsx` exactly.
 ///
 /// Same four thresholds, same four colours. An attendee who checks the web map and then the app
 /// must not see a zone described two different ways.

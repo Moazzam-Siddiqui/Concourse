@@ -7,8 +7,8 @@ Inference Endpoint or bad venue wifi cannot take the demo down mid-run.
 
 Three ways to get a model, tried in order by `load()`:
 
-1. ``CROWDFLOW_GNN_REPO`` — a Hub repo id. Downloaded and cached by huggingface_hub.
-2. ``CROWDFLOW_GNN_CHECKPOINT`` — a path to a local ``.pt``, for offline work.
+1. ``CONCOURSE_GNN_REPO`` — a Hub repo id. Downloaded and cached by huggingface_hub.
+2. ``CONCOURSE_GNN_CHECKPOINT`` — a path to a local ``.pt``, for offline work.
 3. the default ``ml/out/congestion_gnn.pt`` a local training run leaves behind.
 
 Everything here is optional. torch and torch-geometric are heavy and are *not* in this
@@ -68,23 +68,23 @@ class LocalGnn:
             log.warning("local GNN failed to load: %s", self.error)
 
     def _resolve(self) -> tuple[Path, str]:
-        repo = os.environ.get("CROWDFLOW_GNN_REPO", "").strip()
+        repo = os.environ.get("CONCOURSE_GNN_REPO", "").strip()
         if repo:
             from huggingface_hub import hf_hub_download
 
             path = hf_hub_download(
                 repo_id=repo,
-                filename=os.environ.get("CROWDFLOW_GNN_FILE", CHECKPOINT_FILENAME),
+                filename=os.environ.get("CONCOURSE_GNN_FILE", CHECKPOINT_FILENAME),
                 token=os.environ.get("HF_API_TOKEN") or None,
             )
             return Path(path), f"huggingface hub: {repo}"
 
-        explicit = os.environ.get("CROWDFLOW_GNN_CHECKPOINT", "").strip()
+        explicit = os.environ.get("CONCOURSE_GNN_CHECKPOINT", "").strip()
         candidate = Path(explicit) if explicit else DEFAULT_CHECKPOINT
         if not candidate.exists():
             raise FileNotFoundError(
                 f"no checkpoint at {candidate} — train one with ml/gnn/train_gnn.py, "
-                "or set CROWDFLOW_GNN_REPO to pull it from the Hub"
+                "or set CONCOURSE_GNN_REPO to pull it from the Hub"
             )
         return candidate, f"local file: {candidate}"
 

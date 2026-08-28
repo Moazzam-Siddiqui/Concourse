@@ -34,7 +34,7 @@
  * green line as "this is the way in" is the one misreading worth designing out. The
  * heat layer under it keeps green for low density, where nothing else competes.
  *
- * Thresholds match `HEAT_TIERS`/`densityColor` in CrowdFlowApp.jsx, deliberately: a
+ * Thresholds match `HEAT_TIERS`/`densityColor` in ConcourseApp.jsx, deliberately: a
  * segment drawn amber and a zone printed 62% have to be saying the same thing.
  */
 export const TRAFFIC_BANDS = [

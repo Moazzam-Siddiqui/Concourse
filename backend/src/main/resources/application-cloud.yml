@@ -28,4 +28,4 @@ auth:
 
 logging:
   level:
-    com.crowdflow: INFO
+    com.concourse: INFO

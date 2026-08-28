@@ -6,7 +6,7 @@
 # Separate from the app's compose file on purpose: CI has a different lifecycle from the stack
 # it builds. You want Jenkins to stay up while you tear the app down and bring it back, and
 # `docker compose down` on the project should never take the build server with it.
-name: crowdflow-ci
+name: concourse-ci
 
 services:
   jenkins:

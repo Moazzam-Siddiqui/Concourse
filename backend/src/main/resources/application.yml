@@ -27,7 +27,7 @@ server:
 
 spring:
   application:
-    name: crowd-flow-optimiser
+    name: concourse
 
   # Credentials live outside the repo.
   #
@@ -65,7 +65,7 @@ spring:
   # or server install is needed to run the project. The cloud profile swaps this for Postgres
   # (see application-cloud.yml) without any code change.
   datasource:
-    url: ${DB_URL:jdbc:h2:file:./data/crowdflow;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1}
+    url: ${DB_URL:jdbc:h2:file:./data/concourse;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1}
     username: ${DB_USERNAME:sa}
     password: ${DB_PASSWORD:}
     hikari:
@@ -101,7 +101,7 @@ auth:
     # MUST be overridden outside local dev. The cloud profile refuses to start on the default.
     secret: ${AUTH_JWT_SECRET:dev-only-insecure-secret-change-me-in-any-real-deployment}
     ttl-minutes: ${AUTH_JWT_TTL_MINUTES:720}
-    issuer: crowd-flow-optimiser
+    issuer: concourse
 
   # Who gets the operations console. Comma-separated addresses; everyone else is refused the
   # admin portal no matter which door they knock on. Applied at every registration and login,
@@ -132,7 +132,7 @@ auth:
     # From address on reset emails. Defaults to the authenticated mailbox, which is what most
     # providers require anyway.
     mail-from: ${MAIL_FROM:}
-    product-name: Crowd Flow Optimiser
+    product-name: Concourse
 
   # Both optional. Leave unset and that provider is skipped entirely; set one and tokens it
   # issued are accepted alongside locally-minted ones.
@@ -273,4 +273,4 @@ security:
 
 logging:
   level:
-    com.crowdflow: DEBUG
+    com.concourse: DEBUG

@@ -1,4 +1,4 @@
-import 'package:crowdflow_walker/map_projection.dart';
+import 'package:concourse_walker/map_projection.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

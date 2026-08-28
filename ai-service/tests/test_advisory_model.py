@@ -16,7 +16,7 @@ from app.advisory_local import HallucinatedZone, _check_zones, _first_sentence
 ZONES = ["Gate A", "Gate B", "North Concourse", "Food Court", "Exit East"]
 
 PROMPT = (
-    "Venue: Grandprix Arena\n"
+    "Venue: Northgate Arena\n"
     "Time into event: 12 min\n"
     "People inside: 1800, still to arrive: 400\n"
     "Automatic rerouting: on\n"

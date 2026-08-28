@@ -8,22 +8,22 @@
 # This runs the backend under its **cloud** profile against Postgres, which is the shape a real
 # deployment has. Running it locally with ./mvnw instead uses the H2 file and needs none of
 # this — see the README. Both read the same Flyway migrations, which is the point.
-name: crowdflow
+name: concourse
 
 services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: crowdflow
-      POSTGRES_USER: crowdflow
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-crowdflow-local-only}
+      POSTGRES_DB: concourse
+      POSTGRES_USER: concourse
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-concourse-local-only}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     # The backend waits on this rather than on the port opening. Postgres briefly accepts
     # connections during init and then restarts, so "port is open" is not "database is ready" —
     # a backend that starts on the first signal loses the race and dies in Flyway.
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U crowdflow -d crowdflow"]
+      test: ["CMD-SHELL", "pg_isready -U concourse -d concourse"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -60,9 +60,9 @@ services:
         condition: service_started
     environment:
       SPRING_PROFILES_ACTIVE: cloud
-      DB_URL: jdbc:postgresql://postgres:5432/crowdflow
-      DB_USERNAME: crowdflow
-      DB_PASSWORD: ${DB_PASSWORD:-crowdflow-local-only}
+      DB_URL: jdbc:postgresql://postgres:5432/concourse
+      DB_USERNAME: concourse
+      DB_PASSWORD: ${DB_PASSWORD:-concourse-local-only}
 
       # Must not be the committed development default — the cloud profile refuses to start on
       # it, on purpose. This one is fine for a laptop and worthless anywhere else.

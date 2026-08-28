@@ -24,7 +24,7 @@ class ConsentScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 24),
-              const Text('CROWD FLOW',
+              const Text('CONCOURSE',
                   style: TextStyle(
                       color: kBlueHi, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 2.4)),
               const SizedBox(height: 8),

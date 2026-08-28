@@ -45,7 +45,7 @@ VENUE_REQUEST = {
         {"tick": 34, "density": {"gate-a": 0.80, "walk": 0.42, "exit-e": 0.04}},
     ],
     "context": {
-        "venueName": "Grandprix Arena",
+        "venueName": "Northgate Arena",
         "tickSeconds": 1.0,
         "crowdSize": 4200,
         "peopleInside": 1180,
@@ -246,7 +246,7 @@ def test_degrades_to_failed_with_a_full_body_when_hosted_inference_is_mandatory(
     loudly than serve a linear model's answer.
     """
     with hf_env(
-        HF_API_TOKEN="", HF_GNN_URL="", HF_LLM_URL="", CROWDFLOW_LOCAL_FALLBACK="false"
+        HF_API_TOKEN="", HF_GNN_URL="", HF_LLM_URL="", CONCOURSE_LOCAL_FALLBACK="false"
     ):
         response = client.post("/analyze", json=VENUE_REQUEST)
 
@@ -266,7 +266,7 @@ def test_partial_when_only_the_gnn_is_down_and_there_is_no_fallback(client, with
         HF_LLM_URL=f"{STUB}/llm",
         HF_MAX_RETRIES="0",
         HF_TIMEOUT_SECONDS="5",
-        CROWDFLOW_LOCAL_FALLBACK="false",
+        CONCOURSE_LOCAL_FALLBACK="false",
     ):
         response = client.post("/analyze", json=VENUE_REQUEST)
 
@@ -332,7 +332,7 @@ def test_the_in_process_gnn_answers_when_it_is_available(client, without_tinyber
 
 def test_tinybert_answers_and_takes_priority_when_it_is_enabled(client):
     """
-    The beta path: CROWDFLOW_TINYBERT=true makes TinyBERT the model behind /analyze, ahead of
+    The beta path: CONCOURSE_TINYBERT=true makes TinyBERT the model behind /analyze, ahead of
     the trained GNN and the linear fallback.
 
     Skipped when it is not enabled, for the same reason the GNN test skips — the suite must be

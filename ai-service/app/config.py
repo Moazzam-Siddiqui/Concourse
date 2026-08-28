@@ -53,10 +53,10 @@ class Settings:
     def LOCAL_FALLBACK(self) -> bool:
         """
         When true (the default) a missing or failing hosted call falls through to app.scoring.
-        Set CROWDFLOW_LOCAL_FALLBACK=false to make hosted inference mandatory, so a broken
+        Set CONCOURSE_LOCAL_FALLBACK=false to make hosted inference mandatory, so a broken
         token surfaces as a 502 instead of being quietly papered over.
         """
-        return _flag("CROWDFLOW_LOCAL_FALLBACK", True)
+        return _flag("CONCOURSE_LOCAL_FALLBACK", True)
 
     @property
     def hf_gnn_configured(self) -> bool:

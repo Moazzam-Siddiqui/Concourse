@@ -1,4 +1,4 @@
-# Crowd Flow — attendee app
+# Concourse — attendee app
 
 Flutter. Live zone congestion, the way out, and optional GPS.
 
@@ -15,7 +15,7 @@ Needs the Flutter SDK (3.27+) and a running backend. Verified against Flutter 3.
 cd mobile
 flutter pub get
 flutter test
-flutter run --dart-define=CROWDFLOW_API=http://<your-machine-ip>:8080
+flutter run --dart-define=CONCOURSE_API=http://<your-machine-ip>:8080
 ```
 
 **The `--dart-define` is not optional on a real device.** A phone cannot reach the host's

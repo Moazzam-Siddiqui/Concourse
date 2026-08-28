@@ -26,7 +26,7 @@ old one's:
 
 Optional, exactly like the GNN and advisory paths: torch and transformers are not in
 requirements.txt, and ``load()`` records why rather than raising if they are missing. It also
-stays off entirely unless ``CROWDFLOW_TINYBERT`` is set, so the trained GNN remains the default
+stays off entirely unless ``CONCOURSE_TINYBERT`` is set, so the trained GNN remains the default
 and nobody downloads 55 MB by surprise.
 """
 
@@ -51,7 +51,7 @@ EMBEDDING_WEIGHT = 0.30
 #:
 #: ponytail: one constant, calibrated by eye against the norms logged on the first batch.
 #: Mean-pooled TinyBERT norms cluster tightly, so a fixed scale is enough and — unlike the
-#: batch maximum it replaces — is stable across requests. Retune via CROWDFLOW_TINYBERT_SCALE
+#: batch maximum it replaces — is stable across requests. Retune via CONCOURSE_TINYBERT_SCALE
 #: if the first-batch log line shows norms far from this.
 DEFAULT_EMBEDDING_SCALE = 10.0
 
@@ -71,14 +71,14 @@ class TinyBertRisk:
         self.model = None
         self.ready = False
         self.error: str | None = None
-        self.model_id = os.environ.get("CROWDFLOW_TINYBERT_MODEL", DEFAULT_MODEL)
-        self.scale = float(os.environ.get("CROWDFLOW_TINYBERT_SCALE", DEFAULT_EMBEDDING_SCALE))
+        self.model_id = os.environ.get("CONCOURSE_TINYBERT_MODEL", DEFAULT_MODEL)
+        self.scale = float(os.environ.get("CONCOURSE_TINYBERT_SCALE", DEFAULT_EMBEDDING_SCALE))
         self._logged_norms = False
 
     def load(self) -> None:
         """Called once at startup. Never raises — /health reports whatever went wrong."""
-        if not _flag("CROWDFLOW_TINYBERT", False):
-            self.error = "disabled (set CROWDFLOW_TINYBERT=true to enable)"
+        if not _flag("CONCOURSE_TINYBERT", False):
+            self.error = "disabled (set CONCOURSE_TINYBERT=true to enable)"
             return
         try:
             import torch  # noqa: F401
@@ -134,10 +134,10 @@ class TinyBertRisk:
         norms = pooled.norm(dim=-1)                                # (N,)
 
         if not self._logged_norms:
-            # One line, once: the only thing needed to retune CROWDFLOW_TINYBERT_SCALE.
+            # One line, once: the only thing needed to retune CONCOURSE_TINYBERT_SCALE.
             log.info(
                 "TinyBERT embedding norms %.2f–%.2f (scale=%.1f) — retune "
-                "CROWDFLOW_TINYBERT_SCALE if these sit far from it",
+                "CONCOURSE_TINYBERT_SCALE if these sit far from it",
                 float(norms.min()), float(norms.max()), self.scale,
             )
             self._logged_norms = True

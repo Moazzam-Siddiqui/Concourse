@@ -1,7 +1,7 @@
 /*
  * Tailwind v4 — configured entirely from CSS, so there is no tailwind.config.js.
  *
- * CrowdFlowApp.jsx is written almost entirely in Tailwind utilities, and carries its own
+ * ConcourseApp.jsx is written almost entirely in Tailwind utilities, and carries its own
  * design tokens and component classes in an inline <style> block. This file exists to load
  * the utility engine and set the page ground colour underneath it.
  */
@@ -13,7 +13,7 @@ html {
 
 body {
   margin: 0;
-  /* Matches --cf-bg in CrowdFlowApp's token block. Set here as well so the area outside the
+  /* Matches --cf-bg in ConcourseApp's token block. Set here as well so the area outside the
      app root — overscroll, the gap below a short page — does not flash white. */
   background: #05070b;
   color: #eef2f8;
