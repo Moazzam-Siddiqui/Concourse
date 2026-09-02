@@ -60,10 +60,21 @@ services:
       - key: AUTH_ADMIN_PASSWORD
         sync: false
 
-      # Where the backend reaches the AI service. Render gives every service an internal
-      # hostname, so this call never leaves their network.
-      - key: AI_SERVICE_URL
-        value: http://concourse-ai:8000
+      # Where the backend reaches the AI service.
+      #
+      # Two corrections from the first version of this file. The app reads ML_SERVICE_URL,
+      # not AI_SERVICE_URL, so the old key was ignored entirely and the backend fell back to
+      # its localhost default — nothing at all on Render.
+      #
+      # And it must be the AI service's PUBLIC https:// URL, not an internal hostname.
+      # Render's private network is one-directional on the free tier: a free service can
+      # send private requests but cannot receive them, so http://concourse-ai:8000 could
+      # never have worked while both are free.
+      #
+      # Left unset here because Render generates the hostname; paste it from the
+      # concourse-ai service page.
+      - key: ML_SERVICE_URL
+        sync: false          # https://concourse-ai-xxxx.onrender.com
 
   # ------------------------------------------------------------- ai-service --
   - type: web
