@@ -1,0 +1,85 @@
+# Render blueprint: the two server-side services.
+#
+# The frontend is NOT here — it goes to Cloudflare Pages, which serves static files from a
+# CDN and never sleeps. Putting it on Render as well would mean the page itself took fifty
+# seconds to wake, which is the one part of a demo that has to be instant.
+#
+# Postgres is not here either. Render's free database expires after 90 days and then starts
+# charging; Neon's free tier does not expire. The backend only needs DB_URL, so where the
+# database lives is a matter of which free tier survives longest.
+#
+# Deploy with: Render dashboard → New → Blueprint → point at this repo.
+
+services:
+  # ---------------------------------------------------------------- backend --
+  - type: web
+    name: concourse-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: oregon
+    healthCheckPath: /actuator/health
+    envVars:
+      # Activates application-cloud.yml: Postgres instead of the H2 file, and
+      # auth.reset.expose-code forced to false so reset codes are never returned to
+      # whoever typed the address.
+      - key: SPRING_PROFILES_ACTIVE
+        value: cloud
+
+      # Marked sync:false so Render prompts for them rather than reading a committed value.
+      # Every one of these is a credential and none belongs in this file.
+      - key: DB_URL
+        sync: false          # jdbc:postgresql://<neon-host>/<db>?sslmode=require
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+
+      # Without this the app boots on the built-in development secret and every token it
+      # issues is forgeable by anyone who has read the source. Generate with:
+      #   python -c "import secrets;print(secrets.token_urlsafe(48))"
+      - key: AUTH_JWT_SECRET
+        sync: false
+
+      # The Cloudflare Pages origin. A deployed frontend on a different origin gets no
+      # response at all without this — the browser blocks it before your code runs, and the
+      # error looks like the API being down rather than like a CORS rule.
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false          # https://<project>.pages.dev
+
+      # Reset codes are emailed, never shown. For Gmail the password must be a 16-character
+      # App Password, not the account password.
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+
+      - key: AUTH_ADMIN_EMAILS
+        sync: false
+      - key: AUTH_ADMIN_PASSWORD
+        sync: false
+
+      # Where the backend reaches the AI service. Render gives every service an internal
+      # hostname, so this call never leaves their network.
+      - key: AI_SERVICE_URL
+        value: http://concourse-ai:8000
+
+  # ------------------------------------------------------------- ai-service --
+  - type: web
+    name: concourse-ai
+    runtime: docker
+    dockerfilePath: ./ai-service/Dockerfile
+    dockerContext: ./ai-service
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    dockerBuildArgs:
+      # OpenCV + scikit-image + RapidOCR in a 512MB instance is the one thing here that may
+      # not fit. If the service is OOM-killed on a layout upload, set this to false: /analyze
+      # and /predict/risk keep working, /health reports layout.available=false, and the UI
+      # says AI tracing is unavailable — the documented degradation rather than a crash.
+      WITH_LAYOUT: "true"
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"

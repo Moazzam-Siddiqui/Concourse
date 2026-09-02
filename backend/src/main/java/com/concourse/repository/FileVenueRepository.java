@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -40,6 +41,9 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 @Primary
+// Not under `cloud`: JdbcVenueRepository is @Primary there, and two primaries of the same
+// type is a NoUniqueBeanDefinitionException at startup rather than a preference.
+@Profile("!cloud")
 public class FileVenueRepository implements VenueRepository {
 
     private static final Logger log = LoggerFactory.getLogger(FileVenueRepository.class);
