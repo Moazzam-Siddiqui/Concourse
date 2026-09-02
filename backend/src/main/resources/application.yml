@@ -247,6 +247,21 @@ management:
     web:
       exposure:
         include: health,info,metrics,caches
+  health:
+    # The API's health must not depend on Gmail being reachable.
+    #
+    # Spring aggregates every indicator into /actuator/health, so an unreachable SMTP server
+    # makes the whole endpoint report DOWN — and that endpoint is what a platform polls to
+    # decide whether the service is alive. Most hosts block outbound SMTP (25/587) to stop
+    # spam, so on those the mail probe can never succeed and a perfectly healthy API is
+    # restart-looped for a reason that has nothing to do with serving requests.
+    #
+    # It also cost 5 seconds and a full stack trace every 10-second probe.
+    #
+    # Reset codes still try to send; failure is handled where it belongs, in the mailer,
+    # which falls back to logging the code.
+    mail:
+      enabled: false
   endpoint:
     health:
       # Never print component detail (database URLs, disk paths) to an anonymous prober.
