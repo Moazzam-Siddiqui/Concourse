@@ -62,7 +62,7 @@ export const TRAFFIC_BANDS = [
   {
     id: 'severe',
     max: Infinity,
-    color: 'rgb(225,6,0)',
+    color: 'rgb(163,42,28)',
     label: 'SEVERE',
     advice: 'Congested — avoid if you can',
   },

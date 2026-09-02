@@ -256,7 +256,7 @@ function NeedsSession({ title, lede, children }) {
 function ErrorNote({ error }) {
   if (!error) return null;
   return (
-    <div className="cf-card rounded px-4 py-3 flex items-start gap-2.5" style={{ borderColor: "rgba(225,6,0,.4)" }}>
+    <div className="cf-card rounded px-4 py-3 flex items-start gap-2.5" style={{ borderColor: "rgba(169,74,50,.4)" }}>
       <AlertTriangle className="w-4 h-4 cf-red shrink-0 mt-0.5" strokeWidth={2} />
       <p className="text-sm cf-dim leading-relaxed">{error}</p>
     </div>
@@ -264,7 +264,7 @@ function ErrorNote({ error }) {
 }
 
 const HALL_STYLE = {
-  GATE: { fill: "rgba(225,6,0,0.16)", stroke: "rgba(225,6,0,0.5)" },
+  GATE: { fill: "rgba(169,74,50,0.16)", stroke: "rgba(169,74,50,0.5)" },
   WALKWAY: { fill: "rgba(77,141,240,0.12)", stroke: "rgba(77,141,240,0.4)" },
   SEATING: { fill: "rgba(255,255,255,0.05)", stroke: "rgba(120,140,175,0.35)" },
   CONCESSION: { fill: "rgba(255,176,32,0.13)", stroke: "rgba(255,176,32,0.42)" },
@@ -2285,7 +2285,7 @@ function HomePage({ navigate }) {
                 density data would make the colours lie. */}
             <div className="mt-12 max-w-5xl mx-auto relative">
               <div className="absolute -inset-x-8 -bottom-6 h-24 pointer-events-none opacity-60" aria-hidden="true"
-                style={{ background: "radial-gradient(60% 100% at 50% 100%, rgba(225,6,0,.45), transparent 70%)", filter: "blur(28px)" }} />
+                style={{ background: "radial-gradient(60% 100% at 50% 100%, rgba(169,74,50,.45), transparent 70%)", filter: "blur(28px)" }} />
               <div className="relative rounded-md p-2 cf-card-solid" style={{ boxShadow: "var(--cf-shadow-lg)" }}>
                 <div className="flex items-center justify-between px-3 py-2">
                   <span className="cf-mono text-[10px] cf-dim2 tracking-widest">{venue.name?.toUpperCase() ?? "VENUE"}</span>
@@ -4713,7 +4713,7 @@ export function HazardAlerts({ hazards }) {
 
   return (
     <div className="cf-card rounded-md p-5"
-      style={critical ? { borderColor: "rgba(225,6,0,.5)" } : {}}>
+      style={critical ? { borderColor: "rgba(169,74,50,.5)" } : {}}>
       <div className="flex items-center justify-between mb-4">
         <span className="flex items-center gap-2">
           <AlertTriangle className={`w-3.5 h-3.5 ${critical ? "cf-red cf-pulse" : "cf-dim2"}`} strokeWidth={2} />
@@ -4723,7 +4723,7 @@ export function HazardAlerts({ hazards }) {
         </span>
         {critical > 0 && (
           <span className="cf-mono text-[9px] px-2 py-0.5 rounded"
-            style={{ background: "rgba(225,6,0,.16)", color: "var(--cf-red-text)" }}>
+            style={{ background: "rgba(169,74,50,.16)", color: "var(--cf-red-text)" }}>
             {critical} CRITICAL
           </span>
         )}
@@ -5053,7 +5053,7 @@ function ClientApp({ session, navigate, signOut, onSession }) {
               </div>
             </div>
 
-            <div className="cf-card rounded-md p-5" style={advisory ? { borderColor: "rgba(225,6,0,.35)" } : {}}>
+            <div className="cf-card rounded-md p-5" style={advisory ? { borderColor: "rgba(169,74,50,.35)" } : {}}>
               <div className="flex items-center gap-2 mb-2">
                 <AlertTriangle className={`w-3.5 h-3.5 ${advisory ? "cf-red" : "cf-dim2"}`} />
                 <span className={`cf-accent text-[10px] ${advisory ? "cf-red" : "cf-dim2"}`}>Operations note</span>

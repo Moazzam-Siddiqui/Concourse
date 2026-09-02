@@ -106,13 +106,13 @@ test('routes to a chosen destination rather than the nearest exit', () => {
 
 test('traffic bands map density to the documented colours', () => {
   assert.equal(trafficBand(0.2).label, 'CLEAR');
-  assert.equal(trafficBand(0.2).color, 'rgb(77,141,240)');   // blue
+  assert.equal(trafficBand(0.2).color, 'rgb(127,160,192)'); // dusty blue
   assert.equal(trafficBand(0.6).label, 'MODERATE');
-  assert.equal(trafficBand(0.6).color, 'rgb(255,176,32)');   // amber
+  assert.equal(trafficBand(0.6).color, 'rgb(208,149,47)');  // ochre
   assert.equal(trafficBand(0.8).label, 'HEAVY');
-  assert.equal(trafficBand(0.8).color, 'rgb(255,106,0)');    // orange
+  assert.equal(trafficBand(0.8).color, 'rgb(200,107,78)');  // terracotta
   assert.equal(trafficBand(0.95).label, 'SEVERE');
-  assert.equal(trafficBand(0.95).color, 'rgb(225,6,0)');     // red
+  assert.equal(trafficBand(0.95).color, 'rgb(163,42,28)');   // deep terracotta
 });
 
 test('congestion penalty is 1 when empty and rises with density', () => {
