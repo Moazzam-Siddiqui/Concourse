@@ -22,7 +22,7 @@ const API_BASE = import.meta?.env?.VITE_AI_SERVICE_URL ?? "http://localhost:8000
 const NODE_TYPES = ["GATE", "WALKWAY", "CONCESSION", "SEATING", "EXIT"];
 
 const TYPE_META = {
-  GATE:       { color: "#E10600", Icon: DoorOpen,        label: "Gate" },
+  GATE:       { color: "var(--cf-coral)", Icon: DoorOpen,   label: "Gate" },
   EXIT:       { color: "#00C853", Icon: LogOut,          label: "Exit" },
   WALKWAY:    { color: "#4D8DF0", Icon: Footprints,      label: "Walkway" },
   CONCESSION: { color: "#FFB020", Icon: UtensilsCrossed, label: "Concession" },
@@ -675,14 +675,14 @@ export default function LayoutStudio({ onConfirmed, initialFile = null }) {
                   >
                     {(isSel || isFrom) && (
                       <circle cx={n.x} cy={n.y} r={r + 9} fill="none"
-                        stroke={isFrom ? "#FF6A00" : "#EEF2F8"} strokeWidth="2.5" opacity="0.85" />
+                        stroke={isFrom ? "var(--cf-attention)" : "var(--cf-ink)"} strokeWidth="2.5" opacity="0.85" />
                     )}
                     {orphan && (
                       <circle cx={n.x} cy={n.y} r={r + 5} fill="none"
-                        stroke="#E10600" strokeWidth="2" strokeDasharray="5 4" />
+                        stroke="var(--cf-coral)" strokeWidth="2" strokeDasharray="5 4" />
                     )}
                     <circle cx={n.x} cy={n.y} r={r} fill={meta.color}
-                      stroke="#05070B" strokeWidth="3" />
+                      stroke="var(--cf-bg)" strokeWidth="3" />
                     <text x={n.x} y={n.y - r - 8} textAnchor="middle"
                       fill="rgba(238,242,248,0.85)" style={{ fontSize: 17, fontWeight: 600, pointerEvents: "none" }}>
                       {n.name}
@@ -838,14 +838,16 @@ function Collapsible({ title, children }) {
 }
 
 const STYLE = `
-.ls-root{--bg:#05070B;--panel:#0B1018;--card:#111826;--line:#1E2A3D;--line2:#2A3852;
-  --ink:#EEF2F8;--dim:#8A97AC;--dim2:#5B6880;--red:#E10600;--orange:#FF6A00;
-  --amber:#FFB020;--green:#00C853;--blue:#4D8DF0;
+.ls-root{--bg:var(--cf-bg);--panel:var(--cf-panel);--card:var(--cf-card);
+  --line:var(--cf-line);--line2:var(--cf-line2);
+  --ink:var(--cf-ink);--dim:var(--cf-dim);--dim2:var(--cf-dim2);
+  --red:var(--cf-coral);--orange:var(--cf-attention);
+  --amber:var(--cf-attention);--green:var(--cf-way-out);--blue:var(--cf-flow);
   background:var(--bg);color:var(--ink);min-height:100vh;
-  font-family:Inter,system-ui,sans-serif;padding:2rem 1.5rem;}
+  font-family:Karla,system-ui,sans-serif;padding:2rem 1.5rem;}
 .ls-shell{max-width:1400px;margin:0 auto;}
 .ls-narrow{max-width:640px;}
-.ls-eyebrow{font-family:Rajdhani,monospace;font-size:11px;letter-spacing:.16em;color:var(--dim2);}
+.ls-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;color:var(--dim2);}
 .ls-head h1{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;
   font-size:2.2rem;letter-spacing:-.01em;margin:.35rem 0 .5rem;}
 .ls-head p{color:var(--dim);line-height:1.6;font-size:.92rem;max-width:56ch;}
@@ -942,7 +944,7 @@ const STYLE = `
 .ls-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
 .ls-fields{display:flex;flex-direction:column;gap:.7rem;}
 .ls-fields label{display:flex;flex-direction:column;gap:.3rem;}
-.ls-fields label span{font-family:Rajdhani,monospace;font-size:10px;letter-spacing:.14em;color:var(--dim2);}
+.ls-fields label span{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;color:var(--dim2);}
 .ls-fields input,.ls-fields select{background:rgba(5,7,11,.6);border:1px solid var(--line);
   border-radius:9px;padding:.55rem .7rem;color:var(--ink);font-size:.85rem;font-family:inherit;}
 .ls-fields input:focus,.ls-fields select:focus{outline:none;border-color:var(--orange);
@@ -953,7 +955,7 @@ const STYLE = `
 .ls-issue.mt{margin-top:.6rem;}
 .ls-issue strong{display:block;text-transform:uppercase;font-size:.7rem;letter-spacing:.06em;margin-bottom:.15rem;}
 .ls-issue p{margin:0;color:var(--dim);}
-.ls-issue.error{background:rgba(225,6,0,.09);border:1px solid rgba(225,6,0,.32);color:var(--red);}
+.ls-issue.error{background:rgba(169,74,50,.10);border:1px solid rgba(169,74,50,.34);color:var(--red);}
 .ls-issue.warn{background:rgba(255,176,32,.08);border:1px solid rgba(255,176,32,.28);color:var(--amber);}
 .ls-ok{display:flex;gap:.5rem;align-items:center;margin-top:.7rem;padding:.6rem .8rem;border-radius:10px;
   background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.3);color:var(--green);
