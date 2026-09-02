@@ -13,7 +13,17 @@
  * See docs/api-contract.md.
  */
 
-const BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+// VITE_API_BASE_URL still wins where it is set, but the fallback now depends on how the
+// bundle was built rather than always being localhost.
+//
+// A production build that quietly defaults to localhost is the worst kind of wrong: it
+// builds, deploys and loads, and then asks each visitor's own machine for the API — which
+// fails identically to the backend being down. It shipped exactly that way once, because
+// the host's build-time variables were never set and nothing in the build objected.
+//
+// Dev keeps localhost, so nothing changes when running against a local backend.
+const BASE = import.meta.env.VITE_API_BASE_URL
+  ?? (import.meta.env.PROD ? 'https://concourse-backend.onrender.com' : 'http://localhost:8080');
 
 /** Thrown for any non-2xx. Carries the status so callers can tell 404 from 500. */
 export class ApiError extends Error {
