@@ -1,0 +1,25 @@
+{
+  // Cloudflare Workers config for serving the built frontend.
+  //
+  // This project was created as a Worker rather than a Pages project, so its deploy step is
+  // `npx wrangler deploy` and it needs to be told what to publish. Without this file the
+  // build succeeds and the deploy has nothing to upload.
+  //
+  // There is no Worker script here — `assets` with no `main` makes this a pure static asset
+  // deployment, which is what a Vite build is. Same result as Pages, different plumbing.
+  "name": "concourse",
+  "compatibility_date": "2025-01-01",
+
+  "assets": {
+    "directory": "./dist",
+
+    // The app is a single-page build: one index.html, and routing happens in the browser.
+    // Cloudflare would otherwise return its own 404 for any path that is not a real file.
+    //
+    // In practice this app uses a hash router (/#/platform), so every URL already resolves
+    // to index.html and this would rarely fire. It is set anyway because that is one commit
+    // away from being wrong — switch to a history router and without this every deep link
+    // 404s in production while working perfectly in dev.
+    "not_found_handling": "single-page-application"
+  }
+}
