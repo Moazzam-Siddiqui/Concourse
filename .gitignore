@@ -48,3 +48,8 @@ skills-lock.json
 ai-service/.venv-ci/
 ai-service/pytest-results.xml
 compose-logs.txt
+
+# Local browser-verification tooling: hardcodes a Windows Edge path, useful only on
+# this machine.
+frontend/probe.mjs
+frontend/shot.mjs

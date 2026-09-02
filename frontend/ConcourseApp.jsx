@@ -7,6 +7,13 @@ import React, {
   useCallback,
 } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+
+import { ShimmerText } from "./src/ShimmerText.jsx";
+import { ReadingReveal } from "./src/ReadingReveal.jsx";
+import { HandwritingWord } from "./src/HandwritingWord.jsx";
+import { WaveField } from "./src/WaveField.jsx";
+import { STYLE } from "./src/theme.js";
+import { usePrefersReducedMotion } from "./src/usePrefersReducedMotion.js";
 import { api } from "./src/api.js";
 import {
   emailError, passwordChecks, passwordError, passwordAcceptable, passwordStrength,
@@ -37,27 +44,25 @@ import {
    ========================================================================== */
 
 export const gradientPresets = {
-  sunrise: [
-    { color: "#B6D3EF", position: 0 }, { color: "#CAD1D7", position: 0.153 },
-    { color: "#D7CFC8", position: 0.252 }, { color: "#E1CDB9", position: 0.341 },
-    { color: "#EAC6A5", position: 0.424 }, { color: "#EDB185", position: 0.505 },
-    { color: "#EF9B62", position: 0.586 }, { color: "#F18F60", position: 0.669 },
-    { color: "#F48D7A", position: 0.758 }, { color: "#F78A94", position: 0.857 },
-    { color: "#F888A0", position: 1 },
+  /* The density ramp, which is the only scale this product has: clear, filling, crush.
+     Used on the display headings, so a page about crowd pressure is titled in the
+     colours that measure it. */
+  density: [
+    { color: "#4E6B87", position: 0 },
+    { color: "#7C7A55", position: 0.34 },
+    { color: "#96661F", position: 0.62 },
+    { color: "#A94A32", position: 1 },
   ],
-  ember: [
-    { color: "#FFD9A0", position: 0 }, { color: "#FFAE4D", position: 0.28 },
-    { color: "#FF6A00", position: 0.55 }, { color: "#E10600", position: 0.8 },
-    { color: "#8E1B4A", position: 1 },
-  ],
-  bay: [
-    { color: "#DBE3D0", position: 0 }, { color: "#8DB8A7", position: 0.23 },
-    { color: "#2D8E9A", position: 0.42 }, { color: "#076492", position: 0.59 },
-    { color: "#154288", position: 0.79 }, { color: "#262C81", position: 1 },
+  /* Paper tones, for a sweep that reads as light moving across a surface rather than as
+     colour. */
+  paper: [
+    { color: "#C7BDAA", position: 0 },
+    { color: "#F7F4EE", position: 0.5 },
+    { color: "#C7BDAA", position: 1 },
   ],
 };
 
-export const easingPresets = {
+const easingPresets = {
   smooth: "cubic-bezier(0.45, 0, 0.55, 1)",
   gentle: "cubic-bezier(0.76, 0, 0.24, 1)",
   snappy: "cubic-bezier(0.3, 0, 0.2, 1)",
@@ -193,375 +198,6 @@ export function GradientShimmer({
    mesh-gradient field the modern SaaS sites use.
    ========================================================================== */
 
-const STYLE = `
-  :root{
-    --cf-bg:#05070B; --cf-panel:#0B1018; --cf-card:#111826; --cf-card-hi:#182234;
-    --cf-line:#1E2A3D; --cf-line2:#2A3852;
-    --cf-ink:#EEF2F8; --cf-dim:#A8A39F; --cf-dim2:#8D8884;
-    --cf-red:#E10600;
-  /* Brand red is a fill colour. On a dark ground it only reaches 4.06:1 as text, so red
-     type uses this lifted tint (4.50:1) while every fill, gradient and glow keeps the brand. */
-  --cf-red-text:#FF3B35; --cf-orange:#FF6A00; --cf-amber:#FFB020;
-    --cf-blue:#1B4FA8; --cf-blue-lo:#0C1B33; --cf-blue-hi:#4D8DF0;
-    --cf-green:#00C853;
-    /* Entrance/exit signage. Green in, violet out — the pairing reads at a glance and does not
-       collide with the density ramp, which owns green→amber→orange→red. */
-    --cf-violet:#A855F7;
-
-    /* Elevation ramp. Shadows are tuned dark and wide rather than black and tight: on a
-       near-black ground a tight shadow is invisible, so lift has to come from spread. */
-    --cf-shadow-sm:0 2px 8px -2px rgba(0,0,0,.6);
-    --cf-shadow-md:0 18px 46px -22px rgba(0,0,0,.78);
-    --cf-shadow-lg:0 40px 90px -40px rgba(0,0,0,.9);
-    --cf-glow-ember:0 0 0 1px rgba(255,106,0,.22), 0 18px 50px -24px rgba(225,6,0,.55);
-
-    /* One easing for everything that moves, so the whole UI decelerates with the same hand. */
-    --cf-ease:cubic-bezier(0.16,1,0.3,1);
-  }
-  .cf-root{ background:var(--cf-bg); color:var(--cf-ink); font-family:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif; position:relative; min-height:100vh; }
-  .cf-display{ font-family:'Big Shoulders Display','Arial Narrow',sans-serif; }
-  .cf-accent{ font-family:'Rajdhani','JetBrains Mono',sans-serif; font-weight:600; letter-spacing:0.16em; }
-  .cf-mono{ font-family:'JetBrains Mono','SFMono-Regular',Menlo,monospace; }
-
-  .cf-panel{ background:var(--cf-panel); }
-  .cf-card{ background:
-      linear-gradient(160deg, rgba(255,244,236,.05) 0%, rgba(255,244,236,0) 42%),
-      linear-gradient(168deg, rgba(30,26,24,.68), rgba(17,15,14,.76));
-    border:1px solid rgba(255,238,228,.09); border-top-color:rgba(255,240,230,.15);
-    box-shadow:inset 0 1px 0 rgba(255,246,240,.06);
-    backdrop-filter:blur(18px) saturate(130%); transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
-  .cf-card-solid{ background:var(--cf-card); border:1px solid var(--cf-line); }
-  .cf-lift:hover{ transform:translateY(-3px); border-color:var(--cf-line2); box-shadow:0 18px 46px -22px rgba(0,0,0,0.75); }
-  .cf-hairline{ border-color:var(--cf-line); }
-  .cf-dim{ color:var(--cf-dim); } .cf-dim2{ color:var(--cf-dim2); }
-  .cf-red{ color:var(--cf-red-text); } .cf-orange{ color:var(--cf-orange); }
-  .cf-amber{ color:var(--cf-amber); } .cf-green{ color:var(--cf-green); }
-  .cf-blue-hi{ color:var(--cf-blue-hi); }
-  .cf-bg-red{ background:var(--cf-red); }
-
-  /* Mesh gradient field — fixed, soft, slow. The "lovable-style" backdrop. */
-  .cf-mesh{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
-  .cf-mesh span{ position:absolute; border-radius:9999px; filter:blur(90px); opacity:.5; will-change:transform; }
-  .cf-mesh .m1{ width:52vw; height:52vw; left:-12vw; top:-14vw; background:radial-gradient(circle, rgba(225,6,0,0.55), transparent 68%); animation:cf-drift1 26s ease-in-out infinite alternate; }
-  .cf-mesh .m2{ width:46vw; height:46vw; right:-10vw; top:4vh; background:radial-gradient(circle, rgba(255,106,0,0.42), transparent 68%); animation:cf-drift2 32s ease-in-out infinite alternate; }
-  .cf-mesh .m3{ width:60vw; height:60vw; left:10vw; top:38vh; background:radial-gradient(circle, rgba(27,79,168,0.55), transparent 70%); animation:cf-drift3 38s ease-in-out infinite alternate; }
-  .cf-mesh .m4{ width:38vw; height:38vw; right:6vw; top:62vh; background:radial-gradient(circle, rgba(77,141,240,0.28), transparent 70%); animation:cf-drift1 30s ease-in-out infinite alternate-reverse; }
-  /* Paper Shaders grain gradient. Sits directly above the CSS mesh and below the veil, so it
-     replaces the mesh visually once it loads without either layer having to know about the
-     other. Fades in because the shader chunk arrives after first paint and a hard swap of the
-     whole page backdrop reads as a flash. */
-  .cf-shader{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;
-    opacity:0; animation:cf-shader-in 1.2s var(--cf-ease) forwards; }
-  @keyframes cf-shader-in{ to{ opacity:1; } }
-
-  /* The veil that keeps body copy readable over the backdrop.
-     Tuned against the shader, not the old CSS mesh: at the previous 0.55→0.94 ramp it was
-     near-opaque black by mid-page and the gradient underneath simply could not be seen. It
-     now stays light enough for the field to read through, and the pages that need the most
-     protection get it from their own card surfaces instead. */
-  .cf-mesh-veil{ position:fixed; inset:0; z-index:0; pointer-events:none;
-    background:linear-gradient(180deg, rgba(5,7,11,0.46) 0%, rgba(5,7,11,0.62) 45%, rgba(5,7,11,0.74) 100%); }
-
-  /* With the veil lightened, long-form text needs its own local protection so it never sits
-     directly on a bright band of the gradient. Applied to page roots that are mostly prose. */
-  .cf-readable{ position:relative; }
-  .cf-readable::before{ content:''; position:absolute; inset:0; z-index:-1; pointer-events:none;
-    background:radial-gradient(120% 60% at 50% 0%, rgba(5,7,11,.55), rgba(5,7,11,.82) 70%); }
-
-  @keyframes cf-drift1{ from{ transform:translate3d(0,0,0) scale(1); } to{ transform:translate3d(6vw,7vh,0) scale(1.12); } }
-  @keyframes cf-drift2{ from{ transform:translate3d(0,0,0) scale(1.05); } to{ transform:translate3d(-7vw,5vh,0) scale(.92); } }
-  @keyframes cf-drift3{ from{ transform:translate3d(0,0,0) scale(.95); } to{ transform:translate3d(5vw,-8vh,0) scale(1.1); } }
-
-  .cf-grain{ position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.045; mix-blend-mode:overlay; }
-
-  .cf-btn-primary{ background:linear-gradient(100deg, var(--cf-red), var(--cf-orange)); color:#fff; transition:filter .2s ease, transform .2s ease; box-shadow:0 8px 24px -12px rgba(225,6,0,.9); }
-  .cf-btn-primary:hover{ filter:brightness(1.1); transform:translateY(-1px); }
-  .cf-btn-outline{ border:1px solid var(--cf-line2); color:var(--cf-ink); background:rgba(17,24,38,0.5); transition:all .2s ease; }
-  .cf-btn-outline:hover{ border-color:var(--cf-dim); background:var(--cf-card-hi); }
-  .cf-btn-ghost{ color:var(--cf-dim); transition:color .2s ease; }
-  .cf-btn-ghost:hover{ color:var(--cf-ink); }
-  .cf-focus:focus-visible{ outline:2px solid var(--cf-orange); outline-offset:2px; }
-
-  .cf-input{ background:rgba(5,7,11,0.6); border:1px solid var(--cf-line); color:var(--cf-ink); transition:border-color .2s ease, box-shadow .2s ease; }
-  .cf-input:focus{ outline:none; border-color:var(--cf-orange); box-shadow:0 0 0 3px rgba(255,106,0,.14); }
-
-  /* --- Portal identity ------------------------------------------------------
-     The three portals are one product but not one job: an attendee stuck in a
-     queue, an organiser running the event from a desk, and platform operations
-     watching every venue at once. Marketing already gives each a colour; inside
-     the portal that colour only reached a badge in the corner, so all three read
-     as the same screen with different words on it.
-
-     Declaring the accent once per portal and having the shared controls read it
-     from a variable moves the whole surface instead: primary action, focus ring,
-     field focus and rails all shift together. One mechanism, three rooms — and
-     the focus ring now matches the portal a keyboard user is actually in. */
-     --portal-accent is the identity: focus rings, field focus, rails. It stays vivid,
-     because none of those carry text on top of them.
-
-     --portal-cta is the lit end of the primary button's gradient, and it is a shade deeper
-     on purpose. The button's label is white, and white on the vivid accent lands at
-     2.9-3.5:1 — under AA on the one control the whole portal is pointing at. These values
-     are the least darkening that clears 4.5:1, so the button stays the portal's colour and
-     the label stays readable. Scoped to portals only: the marketing CTA is the brand's own
-     racing orange and is not this file's call to dull. */
-  [data-portal]{ --portal-accent:var(--cf-orange); --portal-accent-deep:var(--cf-red);
-    --portal-cta:#C75300; --portal-glow:rgba(255,106,0,.85); --portal-ring:rgba(255,106,0,.16); }
-  [data-portal="walker"]{ --portal-accent:var(--cf-blue-hi); --portal-accent-deep:var(--cf-blue);
-    --portal-cta:#2271EC; --portal-glow:rgba(77,141,240,.85); --portal-ring:rgba(77,141,240,.20); }
-  [data-portal="client"]{ --portal-accent:var(--cf-orange); --portal-accent-deep:var(--cf-red);
-    --portal-cta:#C75300; --portal-glow:rgba(255,106,0,.85); --portal-ring:rgba(255,106,0,.16); }
-  [data-portal="admin"]{ --portal-accent:var(--cf-red-text); --portal-accent-deep:#8E1512;
-    --portal-cta:#EE0700; --portal-glow:rgba(255,59,53,.8); --portal-ring:rgba(255,59,53,.18); }
-
-  [data-portal] .cf-btn-primary{
-    background:linear-gradient(100deg, var(--portal-accent-deep), var(--portal-cta));
-    box-shadow:0 8px 24px -12px var(--portal-glow); }
-  [data-portal] .cf-focus:focus-visible{ outline-color:var(--portal-accent); }
-  [data-portal] .cf-input:focus{ border-color:var(--portal-accent); box-shadow:0 0 0 3px var(--portal-ring); }
-  .cf-input::placeholder{ color:var(--cf-dim2); }
-
-  .cf-chip{ background:rgba(255,255,255,0.04); border:1px solid var(--cf-line); }
-
-  @keyframes cf-marquee{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
-  .cf-marquee-track{ animation:cf-marquee 30s linear infinite; }
-  @keyframes cf-dash{ to{ stroke-dashoffset:-40; } }
-  .cf-dash{ stroke-dasharray:6 6; animation:cf-dash 1.1s linear infinite; }
-  @keyframes cf-flow{ to{ stroke-dashoffset:-24; } }
-  .cf-flow{ stroke-dasharray:4 8; animation:cf-flow 1.4s linear infinite; }
-  @keyframes cf-bounce{ 0%,100%{ transform:translateY(0); opacity:.6; } 50%{ transform:translateY(6px); opacity:1; } }
-  .cf-bounce{ animation:cf-bounce 2s ease-in-out infinite; }
-  @keyframes cf-ping{ 0%{ transform:scale(.5); opacity:.85; } 100%{ transform:scale(2.8); opacity:0; } }
-  .cf-ping{ animation:cf-ping 2.4s cubic-bezier(0,0,.2,1) infinite; transform-origin:center; }
-  @keyframes cf-pulse{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
-  .cf-pulse{ animation:cf-pulse 1.8s ease-in-out infinite; }
-
-  .cf-reveal{ opacity:0; transform:translateY(22px); transition:opacity .7s cubic-bezier(0.16,1,0.3,1), transform .7s cubic-bezier(0.16,1,0.3,1); }
-  .cf-reveal.cf-in{ opacity:1; transform:translateY(0); }
-
-  /* Page entrance is owned by the <AnimatePresence> around <main>, not by CSS.
-     This rule used to run its own opacity+translateY keyframe on each page root; with
-     both animating the same two properties on nested elements, a route change played
-     the fade twice and the second one started before the first had finished, which read
-     as a stutter. The class is left defined — it is still on every page root — so it
-     stays a valid hook without competing for the same properties. */
-  .cf-page-in{ animation:none; }
-
-  .cf-nav-link{ position:relative; }
-  .cf-nav-link::after{ content:''; position:absolute; left:0; right:0; bottom:-7px; height:2px; border-radius:2px;
-    background:linear-gradient(90deg, var(--cf-red), var(--cf-orange)); transform:scaleX(0); transform-origin:left;
-    transition:transform .3s cubic-bezier(0.16,1,0.3,1); }
-  .cf-nav-link:hover::after, .cf-nav-link[data-active="true"]::after{ transform:scaleX(1); }
-
-  .cf-map-grab{ cursor:grab; } .cf-map-grab:active{ cursor:grabbing; }
-
-  /* ------------------------------------------------------------------ *
-   * Spotlight surfaces
-   *
-   * The cursor position is written to --mx/--my as percentages by JS (see <Spotlight>),
-   * and every layer below reads them. Keeping the values on the element as custom
-   * properties means the pointer handler only ever touches style properties that are
-   * composited — no React re-render per mousemove.
-   * ------------------------------------------------------------------ */
-  .cf-spot{ position:relative; isolation:isolate; }
-  .cf-spot::before{
-    content:''; position:absolute; inset:-1px; border-radius:inherit; z-index:0; pointer-events:none;
-    opacity:0; transition:opacity .4s var(--cf-ease);
-    background:radial-gradient(340px circle at var(--mx,50%) var(--my,50%),
-      color-mix(in oklab, var(--cf-spot-color, var(--cf-orange)) 20%, transparent), transparent 62%);
-  }
-  .cf-spot:hover::before, .cf-spot:focus-within::before{ opacity:1; }
-  .cf-spot > *{ position:relative; z-index:1; }
-
-  /* The hairline that lights up on hover. A masked gradient border: the ::after paints a
-     radial highlight and the mask punches out everything but a 1px rim. */
-  .cf-spot-edge::after{
-    content:''; position:absolute; inset:0; border-radius:inherit; z-index:0; pointer-events:none;
-    padding:1px; opacity:0; transition:opacity .4s var(--cf-ease);
-    background:radial-gradient(260px circle at var(--mx,50%) var(--my,50%),
-      var(--cf-spot-color, var(--cf-orange)), transparent 60%);
-    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite:xor; mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    mask-composite:exclude;
-  }
-  .cf-spot-edge:hover::after, .cf-spot-edge:focus-within::after{ opacity:.85; }
-
-  /* Bento tiles: same card material, but lift is scale-free so tall and short tiles in the
-     same grid rise by the same number of pixels and the row does not visually shear. */
-  /* Opacity is deliberately high: these sit over the shader backdrop, and at the ~0.75 that
-     suited the old CSS mesh a bright band of the gradient showed straight through and the
-     card stopped reading as a surface at all. */
-  /* Card material.
-   *
-   * Three things do the work here, and they are the pattern every dark-first product UI
-   * (Linear, Vercel, and most current Awwwards dark sites) converges on:
-   *
-   *  1. a directional fill — lighter at the top-left, darker at the bottom-right — which
-   *     implies a light source instead of reading as a flat swatch;
-   *  2. a 1px edge that is brighter along the top than the bottom, so the card has an
-   *     apparent thickness rather than a drawn outline;
-   *  3. an inset top highlight, the specular line real glass catches at its lip.
-   *
-   * Depth comes from luminance, not from a drop shadow — a shadow on a near-black ground is
-   * invisible anyway, which is why the old flat-fill-plus-outline version looked like a box.
-   */
-  .cf-bento{ position:relative; isolation:isolate; border-radius:1rem;
-    background:
-      linear-gradient(160deg, rgba(255,244,236,.055) 0%, rgba(255,244,236,0) 42%),
-      linear-gradient(168deg, rgba(34,29,27,.66), rgba(17,15,14,.76));
-    border:1px solid rgba(255,238,228,.09);
-    border-top-color:rgba(255,240,230,.16);
-    box-shadow:inset 0 1px 0 rgba(255,246,240,.07), 0 10px 30px -18px rgba(0,0,0,.9);
-    backdrop-filter:blur(18px) saturate(130%);
-    transition:transform .35s var(--cf-ease), border-color .35s var(--cf-ease), box-shadow .35s var(--cf-ease); }
-  .cf-bento:hover{ transform:translateY(-4px);
-    border-color:rgba(255,224,206,.18); border-top-color:rgba(255,232,216,.28);
-    box-shadow:inset 0 1px 0 rgba(255,246,240,.12), var(--cf-shadow-lg); }
-
-  /* Conic aurora used behind hero art and feature tiles. */
-  @keyframes cf-spin{ to{ transform:rotate(1turn); } }
-  .cf-aurora{ position:absolute; inset:-40%; pointer-events:none; opacity:.5; filter:blur(52px);
-    background:conic-gradient(from 0deg, transparent 0deg, rgba(225,6,0,.5) 60deg,
-      transparent 140deg, rgba(77,141,240,.45) 220deg, transparent 300deg, rgba(255,106,0,.5) 350deg, transparent 360deg);
-    animation:cf-spin 22s linear infinite; }
-
-  /* Ticker/edge fades — a marquee that hard-cuts at the container edge reads as clipped;
-     fading it to the page ground makes it read as continuing past the viewport. The fade
-     needs real width (15%) to land: at a few percent of a wide track the ramp is only a
-     handful of pixels and still reads as a hard cut. */
-  .cf-edge-fade{
-    -webkit-mask-image:linear-gradient(90deg, transparent 0%, #000 15%, #000 85%, transparent 100%);
-    mask-image:linear-gradient(90deg, transparent 0%, #000 15%, #000 85%, transparent 100%);
-    -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
-    -webkit-mask-size:100% 100%; mask-size:100% 100%; }
-
-  /* Sweep of light across a surface on hover — used on primary CTAs. */
-  .cf-shine{ position:relative; overflow:hidden; }
-  .cf-shine::after{ content:''; position:absolute; top:0; bottom:0; left:-60%; width:40%;
-    background:linear-gradient(100deg, transparent, rgba(255,255,255,.28), transparent);
-    /* Travels on transform, not on the 'left' property.
-       Animating 'left' relayouts the button on every frame of the sweep, off the compositor
-       and on the main thread — the same thread ticking the simulation and painting the live
-       map. translateX runs on the compositor and cannot touch layout at all.
-       450% because the sweep must cross 180% of the button while the element is 40% of it. */
-    transform:translateX(0) skewX(-18deg); transition:transform .65s var(--cf-ease);
-    will-change:transform; pointer-events:none; }
-  .cf-shine:hover::after{ transform:translateX(450%) skewX(-18deg); }
-
-  /* Scroll progress rail under the header. */
-  .cf-progress{ position:fixed; top:0; left:0; height:2px; z-index:60; transform-origin:0 50%;
-    background:linear-gradient(90deg, var(--cf-red), var(--cf-orange), var(--cf-blue-hi)); }
-
-  /* Tubelight nav indicator: a bar above the active item plus stacked blurs for the bloom. */
-  .cf-lamp{ position:absolute; left:50%; transform:translateX(-50%); top:-11px; width:26px; height:3px;
-    border-radius:0 0 3px 3px; background:linear-gradient(90deg, var(--cf-red), var(--cf-orange)); }
-  .cf-lamp span{ position:absolute; border-radius:9999px; background:rgba(255,106,0,.32); }
-  .cf-lamp .l1{ inset:-9px -12px auto -12px; height:22px; filter:blur(11px); }
-  .cf-lamp .l2{ inset:-5px -4px auto -4px; height:16px; filter:blur(7px); }
-
-  /* ------------------------------------------------------------------ *
-   * Core header treatment
-   *
-   * The diagonal grid-fade signature: a 32px rule grid masked to a radial ellipse anchored
-   * at the top-left, so it is crisp at the wordmark and gone by the middle of the bar. The
-   * source used --muted; here the lines are drawn in the app's own hairline colour.
-   * ------------------------------------------------------------------ */
-  .cf-gridfade{ position:absolute; inset:0; z-index:0; pointer-events:none;
-    background-image:linear-gradient(to right, var(--cf-line) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--cf-line) 1px, transparent 1px);
-    background-size:32px 32px;
-    -webkit-mask-image:radial-gradient(ellipse 80% 80% at 0% 0%, #000 50%, transparent 90%);
-    mask-image:radial-gradient(ellipse 80% 80% at 0% 0%, #000 50%, transparent 90%); }
-
-  /* Filter strip. Hard-bordered cells rather than pills — the divider between items is what
-     makes it read as a strip of segments instead of a row of buttons. */
-  .cf-strip{ display:flex; flex:1; overflow-x:auto; scroll-behavior:smooth;
-    scrollbar-width:none; -ms-overflow-style:none; }
-  .cf-strip::-webkit-scrollbar{ display:none; }
-  .cf-strip-item{ position:relative; display:flex; align-items:center; justify-content:center;
-    flex-shrink:0; min-width:fit-content; cursor:pointer; white-space:nowrap;
-    padding:0.75rem 1.75rem; font-size:0.65rem; font-weight:800; text-transform:uppercase;
-    letter-spacing:0.16em; border-right:1px solid var(--cf-line); color:var(--cf-dim2);
-    transition:background-color .25s var(--cf-ease), color .25s var(--cf-ease); }
-  @media (min-width:768px){ .cf-strip-item{ font-size:0.72rem; } }
-  /* No divider after the final segment — a trailing rule reads as a cell with nothing in it. */
-  .cf-strip-item:last-child{ border-right:0; }
-  .cf-strip-item:hover{ background:rgba(255,255,255,0.04); color:var(--cf-ink); }
-  .cf-strip-item[data-active="true"]{ color:var(--cf-ink); background:rgba(255,255,255,0.05); }
-
-  /* Role card: art bay on top, copy in the middle, action bar pinned to the floor. */
-  .cf-rolecard{ position:relative; isolation:isolate; overflow:hidden; border-radius:1rem;
-    background:
-      linear-gradient(160deg, rgba(255,244,236,.055) 0%, rgba(255,244,236,0) 42%),
-      linear-gradient(168deg, rgba(34,29,27,.66), rgba(17,15,14,.76));
-    border:1px solid rgba(255,238,228,.09); border-top-color:rgba(255,240,230,.16);
-    box-shadow:inset 0 1px 0 rgba(255,246,240,.07), 0 10px 30px -18px rgba(0,0,0,.9);
-    backdrop-filter:blur(18px) saturate(130%);
-    transition:transform .35s var(--cf-ease), border-color .35s var(--cf-ease), box-shadow .35s var(--cf-ease); }
-  .cf-rolecard:hover{ transform:translateY(-5px);
-    border-color:rgba(255,224,206,.18); border-top-color:rgba(255,232,216,.30);
-    box-shadow:inset 0 1px 0 rgba(255,246,240,.12), var(--cf-shadow-lg); }
-
-  .cf-rolecard-art{ position:relative; display:block; height:8.5rem; padding:1rem 1.25rem 0;
-    border-bottom:1px solid rgba(255,238,228,.07); overflow:hidden; }
-  /* Accent bleeds up from the floor of the bay, so colour arrives as light. */
-  .cf-rolecard-glow{ position:absolute; inset:auto -20% -60% -20%; height:130%;
-    background:radial-gradient(60% 100% at 50% 100%, color-mix(in oklab, var(--accent) 30%, transparent), transparent 72%);
-    opacity:.5; transition:opacity .4s var(--cf-ease); pointer-events:none; }
-  .cf-rolecard:hover .cf-rolecard-glow{ opacity:.85; }
-  .cf-rolecard-art svg{ position:relative; z-index:1; }
-
-  .cf-rolecard-index{ position:absolute; top:.35rem; right:.85rem; z-index:2;
-    font-weight:900; font-size:2.75rem; line-height:1; letter-spacing:-.02em;
-    color:transparent; -webkit-text-stroke:1px rgba(255,240,230,.16); user-select:none; }
-  .cf-rolecard:hover .cf-rolecard-index{ -webkit-text-stroke-color:color-mix(in oklab, var(--accent) 45%, transparent); }
-
-  .cf-rolecard-foot{ display:flex; align-items:center; justify-content:space-between;
-    padding:.85rem 1.5rem; border-top:1px solid rgba(255,238,228,.07);
-    background:linear-gradient(180deg, transparent, color-mix(in oklab, var(--accent) 7%, transparent));
-    transition:background .35s var(--cf-ease); }
-  .cf-rolecard:hover .cf-rolecard-foot{
-    background:linear-gradient(180deg, transparent, color-mix(in oklab, var(--accent) 16%, transparent)); }
-
-  /* Stat band. Shares the card material so it belongs to the same system, with 1px inner
-     rules between cells rather than an opaque plate behind them. */
-  .cf-statband{
-    background:
-      linear-gradient(160deg, rgba(255,244,236,.045) 0%, rgba(255,244,236,0) 45%),
-      linear-gradient(168deg, rgba(30,26,24,.55), rgba(17,15,14,.66));
-    border:1px solid rgba(255,238,228,.08); border-top-color:rgba(255,240,230,.14);
-    box-shadow:inset 0 1px 0 rgba(255,246,240,.06);
-    backdrop-filter:blur(18px) saturate(130%); }
-  .cf-statcell{ border-right:1px solid rgba(255,238,228,.07); }
-  .cf-statcell:last-child{ border-right:0; }
-  @media (max-width:767px){
-    .cf-statcell:nth-child(2n){ border-right:0; }
-    .cf-statcell:nth-child(-n+2){ border-bottom:1px solid rgba(255,238,228,.07); }
-  }
-
-  /* Section divider that fades out at both ends instead of butting into the gutter. */
-  .cf-rule{ height:1px; border:0;
-    background:linear-gradient(90deg, transparent, var(--cf-line2), transparent); }
-
-  /* Numeric labels that should not reflow as digits change (counters, clocks). */
-  .cf-tnum{ font-variant-numeric:tabular-nums; }
-
-  @keyframes cf-float{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-9px); } }
-  .cf-float{ animation:cf-float 6s ease-in-out infinite; }
-
-  @keyframes cf-sweep{ 0%{ transform:translateX(-100%); } 100%{ transform:translateX(300%); } }
-  .cf-sweep{ animation:cf-sweep 3.2s var(--cf-ease) infinite; }
-
-  @media (prefers-reduced-motion: reduce){
-    .cf-mesh span{ animation:none !important; }
-    .cf-marquee-track,.cf-dash,.cf-flow,.cf-bounce,.cf-ping,.cf-pulse{ animation:none !important; }
-    .cf-reveal{ opacity:1 !important; transform:none !important; transition:none !important; }
-    .cf-aurora,.cf-float,.cf-sweep{ animation:none !important; }
-    .cf-shader{ animation:none !important; opacity:1; }
-    .cf-shine::after{ display:none; }
-    .cf-bento:hover{ transform:none; }
-  }
-`;
 
 /* ============================================================================
    Venue model + geometry
@@ -582,7 +218,7 @@ const SESSION_STATUS_META = {
   PAUSED: { c: "var(--cf-amber)", l: "PAUSED" },
   CREATED: { c: "var(--cf-dim)", l: "READY" },
   STOPPED: { c: "var(--cf-dim2)", l: "STOPPED" },
-  COMPLETED: { c: "var(--cf-blue-hi)", l: "COMPLETE" },
+  COMPLETED: { c: "var(--cf-cobalt-text)", l: "COMPLETE" },
 };
 
 /** A small live/offline pill. Every portal shows one, so the socket state is never a mystery. */
@@ -605,11 +241,11 @@ function ConnectionPill({ connected, status }) {
 /** Shown wherever a portal needs a session and does not have one yet. */
 function NeedsSession({ title, lede, children }) {
   return (
-    <div className="cf-card rounded-2xl p-8 max-w-lg">
-      <span className="w-12 h-12 rounded-xl flex items-center justify-center mb-6" style={{ background: "rgba(77,141,240,0.16)" }}>
+    <div className="cf-card rounded-md p-8 max-w-lg">
+      <span className="w-12 h-12 rounded flex items-center justify-center mb-6" style={{ background: "rgba(77,141,240,0.16)" }}>
         <Radio className="w-6 h-6 cf-blue-hi" strokeWidth={2} />
       </span>
-      <h2 className="cf-display font-black uppercase text-2xl tracking-tight mb-2">{title}</h2>
+      <h2 className="cf-display font-semibold text-2xl tracking-tight mb-2">{title}</h2>
       <p className="text-sm cf-dim leading-relaxed mb-6">{lede}</p>
       {children}
     </div>
@@ -620,7 +256,7 @@ function NeedsSession({ title, lede, children }) {
 function ErrorNote({ error }) {
   if (!error) return null;
   return (
-    <div className="cf-card rounded-xl px-4 py-3 flex items-start gap-2.5" style={{ borderColor: "rgba(225,6,0,.4)" }}>
+    <div className="cf-card rounded px-4 py-3 flex items-start gap-2.5" style={{ borderColor: "rgba(225,6,0,.4)" }}>
       <AlertTriangle className="w-4 h-4 cf-red shrink-0 mt-0.5" strokeWidth={2} />
       <p className="text-sm cf-dim leading-relaxed">{error}</p>
     </div>
@@ -661,10 +297,10 @@ const densityColor = (d) =>
  * blob under a zone and the percentage printed on it are describing the same number.
  */
 const HEAT_TIERS = [
-  { id: "cf-heat-low", rgb: "rgb(0,200,83)", max: 0.5 },
-  { id: "cf-heat-mid", rgb: "rgb(255,176,32)", max: 0.7 },
-  { id: "cf-heat-high", rgb: "rgb(255,106,0)", max: 0.85 },
-  { id: "cf-heat-crit", rgb: "rgb(225,6,0)", max: Infinity },
+  { id: "cf-heat-low", rgb: "rgb(155,184,154)", max: 0.5 },
+  { id: "cf-heat-mid", rgb: "rgb(227,169,95)", max: 0.7 },
+  { id: "cf-heat-high", rgb: "rgb(220,140,85)", max: 0.85 },
+  { id: "cf-heat-crit", rgb: "rgb(217,108,97)", max: Infinity },
 ];
 
 const heatTier = (d) => HEAT_TIERS.find((tier) => d <= tier.max) ?? HEAT_TIERS[HEAT_TIERS.length - 1];
@@ -977,7 +613,7 @@ export function VenueMap({
   const outlinePath = venue.outline.map((p) => p.join(",")).join(" ");
 
   return (
-    <div ref={wrapRef} className="relative rounded-2xl overflow-hidden cf-card-solid" style={{ height }}>
+    <div ref={wrapRef} className="relative rounded-md overflow-hidden cf-card-solid" style={{ height }}>
       <svg
         viewBox={viewBox} className="w-full h-full cf-map-grab touch-none"
         onPointerDown={onPointerDown} onPointerMove={onPointerMove}
@@ -1055,7 +691,7 @@ export function VenueMap({
 
         {/* Base. Sized well past the 0-100 projection space so the ground still covers the
             frame when a wide venue or a zoomed-out view widens the viewBox past it. */}
-        <rect x="-400" y="-400" width="900" height="900" fill="#070B12" />
+        <rect x="-400" y="-400" width="900" height="900" fill="var(--cf-plate)" />
         <rect x="-400" y="-400" width="900" height="900" fill="url(#cf-map-grid)" />
 
         {/* venue landmass — tinted base first, then the floor texture over it, so the tiles
@@ -1142,7 +778,7 @@ export function VenueMap({
               <polygon points={h.pts.map((p) => p.join(",")).join(" ")}
                 fill={showDensity ? densityColor(h.density) : style.fill}
                 fillOpacity={showDensity ? 0.06 : 1}
-                stroke={isSel ? "var(--cf-orange)" : style.stroke}
+                stroke={isSel ? "var(--cf-metal-hi)" : style.stroke}
                 strokeWidth={isSel ? 0.8 : 0.4} />
 
               {/* Pixel art for the zone, centred on it and scaled to its radius, so a bigger
@@ -1165,13 +801,13 @@ export function VenueMap({
                   one unreadable line. Hanging both off the bottom edge puts them in the gap
                   between zones, where there is room, and leaves the artwork clear. */}
               <text x={hx} y={hy + h.radius + 2.2} textAnchor="middle" fill="rgba(238,242,248,0.92)"
-                stroke="#070B12" strokeWidth={0.7} paintOrder="stroke"
+                stroke="var(--cf-plate)" strokeWidth={0.7} paintOrder="stroke"
                 style={{ fontSize: 1.9, fontFamily: "Rajdhani, sans-serif", fontWeight: 600, letterSpacing: "0.08em", pointerEvents: "none" }}>
                 {h.name.toUpperCase()}
               </text>
               {showDensity && (
                 <text x={hx} y={hy + h.radius + 4.4} textAnchor="middle" fill={densityColor(h.density)}
-                  stroke="#070B12" strokeWidth={0.7} paintOrder="stroke"
+                  stroke="var(--cf-plate)" strokeWidth={0.7} paintOrder="stroke"
                   style={{ fontSize: 1.8, fontFamily: "JetBrains Mono, monospace", fontWeight: 700, pointerEvents: "none" }}>
                   {Math.round(h.density * 100)}%
                 </text>
@@ -1218,7 +854,7 @@ export function VenueMap({
             const uy = dy / length;
             const bx = h.center[0] + ux * (h.radius + 5);
             const by = h.center[1] + uy * (h.radius + 5);
-            const colour = isExit ? "var(--cf-violet)" : "var(--cf-green)";
+            const colour = isExit ? "var(--cf-way-out)" : "var(--cf-way-in)";
             const label = isExit ? "EXIT" : "ENTRANCE";
             const width = label.length * 1.15 + 2;
             // Chevrons travel with the crowd: away from the venue at an exit, into it at a gate.
@@ -1226,7 +862,7 @@ export function VenueMap({
             return (
               <g key={`sign-${h.id}`} style={{ pointerEvents: "none" }}>
                 <rect x={bx - width / 2} y={by - 1.9} width={width} height={3.8} rx="0.9"
-                  fill="#0B1018" stroke={colour} strokeWidth="0.35" opacity="0.95" />
+                  fill="var(--cf-plate-hi)" stroke={colour} strokeWidth="0.35" opacity="0.95" />
                 <text x={bx} y={by + 0.7} textAnchor="middle" fill={colour}
                   style={{ fontSize: 1.7, fontFamily: "Rajdhani, sans-serif", fontWeight: 700, letterSpacing: "0.14em" }}>
                   {label}
@@ -1253,7 +889,7 @@ export function VenueMap({
           <g style={{ pointerEvents: "none" }}>
             <polyline
               points={trafficRoute.points.map((p) => p.join(",")).join(" ")}
-              fill="none" stroke="#05070B" strokeWidth="3.4"
+              fill="none" stroke="var(--cf-plate)" strokeWidth="3.4"
               strokeLinecap="round" strokeLinejoin="round" opacity="0.9" />
             {trafficRoute.segments.map((seg) => (
               <line key={seg.id} x1={seg.from[0]} y1={seg.from[1]}
@@ -1270,7 +906,7 @@ export function VenueMap({
             <circle
               cx={trafficRoute.points[trafficRoute.points.length - 1][0]}
               cy={trafficRoute.points[trafficRoute.points.length - 1][1]}
-              r="1.8" fill="var(--cf-violet)" stroke="#05070B" strokeWidth="0.5" />
+              r="1.8" fill="var(--cf-way-out)" stroke="var(--cf-plate)" strokeWidth="0.5" />
           </g>
         ) : route && route.length > 1 && (
           <>
@@ -1279,7 +915,7 @@ export function VenueMap({
             <polyline points={route.map((p) => p.join(",")).join(" ")} fill="none"
               stroke="var(--cf-blue-hi)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" className="cf-flow" />
             <circle cx={route[route.length - 1][0]} cy={route[route.length - 1][1]} r="1.6"
-              fill="var(--cf-green)" stroke="#05070B" strokeWidth="0.5" />
+              fill="var(--cf-way-in)" stroke="var(--cf-plate)" strokeWidth="0.5" />
           </>
         )}
 
@@ -1307,7 +943,7 @@ export function VenueMap({
             top of the artwork and hiding it — the blue dots that covered both stalls. */}
         {showPois && venue.pois.filter((poi) => !poisHiddenBySprites.has(poi.id)).map((poi) => (
           <g key={poi.id}>
-            <circle cx={poi.x} cy={poi.y} r="1.5" fill="#0B1018" stroke="var(--cf-blue-hi)" strokeWidth="0.4" />
+            <circle cx={poi.x} cy={poi.y} r="1.5" fill="var(--cf-plate-hi)" stroke="var(--cf-blue-hi)" strokeWidth="0.4" />
             <circle cx={poi.x} cy={poi.y} r="0.55" fill="var(--cf-blue-hi)" />
           </g>
         ))}
@@ -1331,7 +967,7 @@ export function VenueMap({
           { icon: Locate, label: "Recenter", fn: recenter },
         ].map(({ icon: Icon, label, fn }) => (
           <button key={label} onClick={fn} aria-label={label}
-            className="cf-focus w-9 h-9 rounded-lg cf-card-solid flex items-center justify-center hover:cf-card-hi transition-colors">
+            className="cf-focus w-9 h-9 rounded cf-card-solid flex items-center justify-center hover:cf-card-hi transition-colors">
             <Icon className="w-4 h-4" />
           </button>
         ))}
@@ -1340,19 +976,19 @@ export function VenueMap({
       {/* Density key. Without it the colours are decoration — this is what makes them a scale.
           Hidden with the heat layer itself, so it never explains something that is not on screen. */}
       {showDensity && (
-        <div className="absolute left-3 top-3 cf-card-solid rounded-lg px-3 py-2.5 pointer-events-none">
+        <div className="absolute left-3 top-3 cf-card-solid rounded px-3 py-2.5 pointer-events-none">
           <div className="cf-accent text-[9px] cf-dim2 mb-1.5">DENSITY</div>
           <div className="h-1.5 w-32 rounded-full"
-            style={{ background: "linear-gradient(90deg, rgb(0,200,83) 0%, rgb(255,176,32) 45%, rgb(255,106,0) 72%, rgb(225,6,0) 100%)" }} />
+            style={{ background: "linear-gradient(90deg, rgb(155,184,154) 0%, rgb(227,169,95) 55%, rgb(217,108,97) 100%)" }} />
           <div className="flex justify-between cf-mono text-[9px] cf-dim2 mt-1">
             <span>LOW</span><span>CRITICAL</span>
           </div>
           <div className="flex items-center gap-3 mt-2.5">
             <span className="flex items-center gap-1 cf-mono text-[9px] cf-dim2">
-              <span className="w-2 h-2 rounded-sm" style={{ background: "var(--cf-green)" }} />ENTRY
+              <span className="w-2 h-2 rounded-sm" style={{ background: "var(--cf-way-in)" }} />ENTRY
             </span>
             <span className="flex items-center gap-1 cf-mono text-[9px] cf-dim2">
-              <span className="w-2 h-2 rounded-sm" style={{ background: "var(--cf-violet)" }} />EXIT
+              <span className="w-2 h-2 rounded-sm" style={{ background: "var(--cf-way-out)" }} />EXIT
             </span>
           </div>
           {/* Route colours, shown only when a route is on screen. The density ramp above
@@ -1362,7 +998,7 @@ export function VenueMap({
           {trafficRoute?.segments?.length > 0 && (
             <div className="mt-2.5 pt-2 flex flex-col gap-1"
               style={{ borderTop: "1px solid var(--cf-line)" }}>
-              <div className="cf-accent text-[9px] cf-dim2">YOUR ROUTE</div>
+              <div className="cf-accent text-[9px] cf-dim2">Your route</div>
               {TRAFFIC_BANDS.map((band) => (
                 <span key={band.id} className="flex items-center gap-1.5 cf-mono text-[9px] cf-dim2">
                   <span className="w-3 h-[3px] rounded-full" style={{ background: band.color }} />
@@ -1397,18 +1033,6 @@ export function VenueMap({
    Primitives
    ========================================================================== */
 
-function usePrefersReducedMotion() {
-  const [r, setR] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setR(mq.matches);
-    const on = (e) => setR(e.matches);
-    mq.addEventListener?.("change", on);
-    return () => mq.removeEventListener?.("change", on);
-  }, []);
-  return r;
-}
 
 /**
  * Scroll-reveal wrapper.
@@ -1431,127 +1055,282 @@ function Reveal({ children, delay = 0, className = "" }) {
   return <div ref={ref} className={`cf-reveal ${inView ? "cf-in" : ""} ${className}`} style={{ transitionDelay: `${delay}ms` }}>{children}</div>;
 }
 
+
 /**
- * The page backdrop.
+ * One designated interactive zone: a grid that warps toward the pointer and ripples
+ * on click, bounded to whatever it wraps.
  *
- * A Paper Shaders grain gradient (WebGL) drifting behind the whole site, with the original
- * CSS mesh kept underneath it as the fallback. The shader is loaded lazily and mounted only
- * in the browser, for three reasons that all have to hold at once:
- *
- *  - the render smoke test runs this file through react-dom/server against a hand-written DOM
- *    shim with no canvas and no WebGL, so a shader mounting during render would break it;
- *  - the shader bundle is ~430KB and nothing above the fold needs it to paint, so keeping it
- *    out of the main chunk is what stops the backdrop delaying first contentful paint;
- *  - a machine with WebGL disabled or blocked must still get a backdrop rather than a void.
- *
- * Under `prefers-reduced-motion` the shader is never loaded at all — it is a continuously
- * animating full-viewport surface, which is exactly what that setting is asking us not to run.
- * The CSS mesh underneath is already static in that mode, so the page keeps its depth.
+ * Listens on its own element rather than on window, so it is inert until the pointer
+ * is actually inside it, and the loop stops on leave. Edges are masked so the grid
+ * fades out rather than ending on a hard rectangle.
  */
-function MeshField() {
+function KineticField({ children, className = "" }) {
+  const hostRef = useRef(null);
+  const canvasRef = useRef(null);
   const reduced = usePrefersReducedMotion();
-  const [Shader, setShader] = useState(null);
+
+  const mouse = useRef({ x: -9999, y: -9999 });
+  const target = useRef({ x: -9999, y: -9999 });
+  const ripples = useRef([]);
+  const raf = useRef(0);
+  const size = useRef({ w: 0, h: 0 });
+  const idleAt = useRef(0);
 
   useEffect(() => {
-    // A cheap capability probe: importing the shader bundle on a machine that cannot run it
-    // would be pure download cost for a canvas that never paints.
-    try {
-      const probe = document.createElement("canvas");
-      const gl = probe.getContext("webgl2") || probe.getContext("webgl");
-      if (!gl) return;
-    } catch { return; }
+    const host = hostRef.current;
+    const canvas = canvasRef.current;
+    if (!host || !canvas) return undefined;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return undefined;
 
-    let alive = true;
-    import("@paper-design/shaders-react")
-      .then((m) => { if (alive && m?.GrainGradient) setShader(() => m.GrainGradient); })
-      .catch(() => { /* stay on the CSS mesh */ });
-    return () => { alive = false; };
-  }, []);
+    const CELL = 46, INFLUENCE = 300, MAX_WARP = 30, LERP = 0.12;
+    const ACCENT = { r: 95, g: 107, b: 57 };
+    const LINE = { r: 33, g: 30, b: 26, a: 0.10 };
+
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const mix = (base, act, t) =>
+      `rgba(${Math.round(lerp(base.r, act.r, t))},${Math.round(lerp(base.g, act.g, t))},` +
+      `${Math.round(lerp(base.b, act.b, t))},${lerp(base.a, act.a, t).toFixed(3)})`;
+
+    const setSize = () => {
+      const r = host.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.max(1, Math.round(r.width * dpr));
+      canvas.height = Math.max(1, Math.round(r.height * dpr));
+      canvas.style.width = r.width + "px";
+      canvas.style.height = r.height + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      size.current = { w: r.width, h: r.height };
+      frame(performance.now());
+    };
+
+    function frame(now) {
+      const { w: W, h: H } = size.current;
+      if (!W || !H) return;
+      const m = mouse.current, rs = ripples.current;
+
+      for (let i = rs.length - 1; i >= 0; i--) {
+        const age = (now - rs[i].born) / 1000;
+        rs[i].radius = Math.max(0, age * 380);
+        rs[i].opacity = Math.max(0, 1 - age * 1.3);
+        if (rs[i].opacity <= 0) rs.splice(i, 1);
+      }
+
+      ctx.clearRect(0, 0, W, H);
+
+      const cols = Math.max(2, Math.ceil(W / CELL)) + 1;
+      const rows = Math.max(2, Math.ceil(H / CELL)) + 1;
+      const cw = W / (cols - 1), ch = H / (rows - 1);
+      const pts = [];
+
+      for (let row = 0; row < rows; row++) {
+        pts[row] = [];
+        for (let col = 0; col < cols; col++) {
+          const gx = col * cw, gy = row * ch;
+          const pinC = Math.min(col / 1.5, (cols - 1 - col) / 1.5, 1);
+          const pinR = Math.min(row / 1.5, (rows - 1 - row) / 1.5, 1);
+          const pin = pinC * pinC * pinR * pinR;
+
+          const dx = gx - m.x, dy = gy - m.y;
+          const dist = Math.hypot(dx, dy);
+          let rx = 0, ry = 0;
+          for (const r of rs) {
+            const diff = Math.hypot(gx - r.x, gy - r.y) - r.radius;
+            if (Math.abs(diff) < 50) {
+              const st = (1 - Math.abs(diff) / 50) * r.opacity * 16 * pin;
+              const ang = Math.atan2(gy - r.y, gx - r.x);
+              const sign = diff < 0 ? -1 : 1;
+              rx -= Math.cos(ang) * st * sign;
+              ry -= Math.sin(ang) * st * sign;
+            }
+          }
+          let px = gx + rx, py = gy + ry;
+          if (dist < INFLUENCE && dist > 0 && pin > 0) {
+            const t = dist / INFLUENCE;
+            const eased = t < 0.01 ? 0 : (1 - t) * (1 - t) * Math.min(1, dist / 55);
+            const amt = eased * MAX_WARP * pin;
+            const ang = Math.atan2(dy, dx);
+            px -= Math.cos(ang) * amt;
+            py -= Math.sin(ang) * amt;
+          }
+          pts[row][col] = { x: px, y: py, p: Math.max(0, 1 - dist / INFLUENCE) * pin };
+        }
+      }
+
+      const seg = (a, b) => {
+        const avg = (a.p + b.p) / 2;
+        const t = avg * avg * (3 - 2 * avg);
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.strokeStyle = mix(LINE, { ...ACCENT, a: 0.8 }, t);
+        ctx.lineWidth = lerp(0.7, 1.4, t);
+        ctx.stroke();
+      };
+      for (let row = 0; row < rows; row++)
+        for (let col = 0; col < cols - 1; col++) seg(pts[row][col], pts[row][col + 1]);
+      for (let col = 0; col < cols; col++)
+        for (let row = 0; row < rows - 1; row++) seg(pts[row][col], pts[row + 1][col]);
+
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const pt = pts[row][col];
+          const t = pt.p * pt.p * (3 - 2 * pt.p);
+          const r = lerp(1.1, 3.2, t);
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+          ctx.fillStyle = mix({ r: 33, g: 30, b: 26, a: 0.16 }, { ...ACCENT, a: 1 }, t);
+          ctx.fill();
+        }
+      }
+
+      for (const r of rs) {
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, Math.max(0, r.radius), 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(33,30,26,${(r.opacity * 0.20).toFixed(3)})`;
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      }
+    }
+
+    setSize();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(setSize) : null;
+    ro?.observe(host);
+
+    if (reduced) return () => ro?.disconnect();
+
+    const loop = (now) => {
+      const m = mouse.current, t = target.current;
+      m.x = lerp(m.x, t.x, LERP);
+      m.y = lerp(m.y, t.y, LERP);
+      frame(now);
+      const settled = Math.hypot(m.x - t.x, m.y - t.y) < 0.4 && !ripples.current.length;
+      if (settled && now - idleAt.current > 700) { raf.current = 0; return; }
+      if (!settled) idleAt.current = now;
+      raf.current = requestAnimationFrame(loop);
+    };
+    const kick = () => {
+      idleAt.current = performance.now();
+      if (!raf.current) raf.current = requestAnimationFrame(loop);
+    };
+
+    const onMove = (e) => {
+      const r = host.getBoundingClientRect();
+      target.current = { x: e.clientX - r.left, y: e.clientY - r.top };
+      kick();
+    };
+    const onLeave = () => { target.current = { x: -9999, y: -9999 }; kick(); };
+    const onDown = (e) => {
+      const r = host.getBoundingClientRect();
+      ripples.current.push({
+        x: e.clientX - r.left, y: e.clientY - r.top,
+        radius: 0, opacity: 1, born: performance.now(),
+      });
+      kick();
+    };
+
+    host.addEventListener("pointermove", onMove, { passive: true });
+    host.addEventListener("pointerleave", onLeave, { passive: true });
+    host.addEventListener("pointerdown", onDown, { passive: true });
+
+    return () => {
+      ro?.disconnect();
+      host.removeEventListener("pointermove", onMove);
+      host.removeEventListener("pointerleave", onLeave);
+      host.removeEventListener("pointerdown", onDown);
+      cancelAnimationFrame(raf.current);
+      raf.current = 0;
+    };
+  }, [reduced]);
 
   return (
-    <>
-      {/* Fallback / underlay. Always rendered: it is what shows before the shader chunk
-          arrives, and what remains if WebGL is unavailable or reduced-motion is set. Once
-          the shader is up the mesh fades out — two full-viewport colour fields stacked on
-          each other muddy both, and the shader is the better of the two. */}
-      <div className="cf-mesh" aria-hidden="true"
-        style={{ opacity: Shader ? 0 : 1, transition: "opacity 1.2s var(--cf-ease)" }}>
-        <span className="m1" /><span className="m2" /><span className="m3" /><span className="m4" />
-      </div>
+    <div ref={hostRef} className={`cf-kfield ${className}`}>
+      <canvas ref={canvasRef} aria-hidden="true" className="cf-kfield-canvas" />
+      <div className="relative" style={{ zIndex: 1 }}>{children}</div>
+    </div>
+  );
+}
 
-      {Shader && (
-        <div className="cf-shader" aria-hidden="true">
-          <Shader
-            style={{ width: "100%", height: "100%" }}
-            colorBack="#05070B"
-            /* The brand ramp: deep blue for the calm ground, then the ember pair, so the
-               field reads as the density scale the product is built on rather than as
-               arbitrary decoration. Brightened well past the token colours on purpose —
-               these are seen through the veil above, which knocks them back. */
-            colors={["#1B4FA8", "#4D8DF0", "#E10600", "#FF6A00"]}
-            shape="corners"
-            softness={0.62}
-            intensity={0.55}
-            noise={0.32}
-            /* Reduced motion freezes the field rather than removing it. Windows in particular
-               reports `reduce` whenever "show animations" is off, which is a common default —
-               dropping the backdrop entirely there cost those users the whole design for a
-               setting that only ever asked us to stop moving things. speed:0 renders one
-               static frame, which is exactly what the preference is asking for. */
-            speed={reduced ? 0 : 0.9}
-          />
+/**
+ * A full-bleed photograph used as a section rule.
+ *
+ * One treatment for every photo on the site: heavily desaturated, darkened, and
+ * graded toward the page ground, with the top and bottom edges dissolved so the band
+ * joins the page instead of sitting on it as a foreign rectangle.
+ */
+function PhotoBand({ src, alt, caption, graded = false, height = "clamp(16rem, 34vw, 26rem)" }) {
+  return (
+    <section className="relative overflow-hidden" style={{ height }} aria-label={alt}>
+      <img src={src} alt={alt} loading="lazy" decoding="async"
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ filter: graded ? "none" : "grayscale(0.42) contrast(0.98) brightness(1.16)" }} />
+      {/* Grade toward the ground so the photograph lives in the palette. */}
+      <div aria-hidden="true" className="absolute inset-0"
+        style={{ background: "linear-gradient(180deg, var(--cf-bg) 0%, rgba(247,244,238,.10) 40%, rgba(247,244,238,.18) 60%, var(--cf-bg) 100%)" }} />
+      {caption && (
+        <div className="absolute inset-x-0 bottom-0">
+          <div className="max-w-7xl mx-auto px-6 pb-10">
+            <p className="cf-display font-medium tracking-tight max-w-2xl"
+              style={{ fontSize: "clamp(1.35rem, 2.6vw, 2rem)", letterSpacing: "-0.03em",
+                       color: "var(--cf-ink)" }}>
+              {caption}
+            </p>
+          </div>
         </div>
       )}
-
-      {/* The veil sits above both layers. At full strength the shader would compete with the
-          UI for attention and wreck contrast on body copy; this is what keeps it a backdrop. */}
-      <div className="cf-mesh-veil" aria-hidden="true" />
-      <svg className="cf-grain" aria-hidden="true">
-        <filter id="cf-noise">
-          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" />
-          <feColorMatrix type="saturate" values="0" />
-        </filter>
-        <rect width="100%" height="100%" filter="url(#cf-noise)" />
-      </svg>
-    </>
+    </section>
   );
 }
 
 function Eyebrow({ children }) {
+  if (!children) return null;
   return (
-    <div className="inline-flex items-center gap-2 cf-accent text-[11px] cf-chip rounded-full px-3 py-1 cf-dim">
+    <div className="flex items-center gap-3 cf-accent text-[10.5px] cf-dim2">
+      {/* A rule rather than a pill. The label is metadata, so it should sit on the
+          page like a standfirst instead of being boxed and tinted. */}
+      <span aria-hidden="true" className="h-px w-6" style={{ background: "var(--cf-line2)" }} />
       {children}
     </div>
   );
 }
 
 /**
- * The product mark.
+ * The product mark: a C with someone standing in the gap, knocked out of a filled badge.
  *
- * Three swept channels narrowing into a gate, coloured with the density ramp the rest of the
- * app uses — clear blue on top, warming through orange, jammed red at the bottom — with the
- * apex dot standing for the bottleneck being predicted. Inline rather than an <img> so the
- * strokes can inherit currentColor when it is placed on a coloured surface, and so it costs
- * no extra request. `public/favicon.svg` is the same drawing, tuned for 16px.
+ * A concourse is a ring corridor with openings, so the mark is one — a thick arc broken
+ * on the right, with a dot held inside the mouth of the break. It doubles as the
+ * initial, and the dot is enclosed rather than falling, which is what keeps the shape
+ * from reading as something dripping.
+ *
+ * Negative space in a solid square because filled forms hold their silhouette at 16px
+ * where stroked detail smears, and because it is the same figure/ground relationship as
+ * the primary button — the mark and the main call to action are visibly one system.
+ *
+ * The cut-out is a mask, not a shape painted in the page colour, so it can sit on a
+ * photograph or a coloured panel without dragging a dark rectangle along with it.
+ *
+ * Inline rather than an <img> so it costs no request. `public/favicon.svg` is the same
+ * geometry.
  */
 function LogoMark({ size = 32, className = "" }) {
+  // A fixed id is safe here where a generated one would not be: every instance on the
+  // page renders identical mask content, so a collision resolves to the same drawing.
+  const MASK = "cf-mark-cut";
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" className={className} aria-hidden="true" focusable="false">
+    <svg width={size} height={size} viewBox="0 0 64 64" className={className}
+      aria-hidden="true" focusable="false">
       <defs>
-        <linearGradient id="cf-logo-ember" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="var(--cf-red)" />
-          <stop offset="1" stopColor="var(--cf-orange)" />
-        </linearGradient>
+        <mask id={MASK}>
+          {/* White keeps, black cuts. */}
+          <rect width="64" height="64" rx="15" fill="#fff" />
+          {/* Arc swept the long way round from the upper terminal to the lower one, so
+              the break lands on the right where the dot sits. */}
+          <path d="M40.2 20.2 A15 15 0 1 0 40.2 43.8" fill="none" stroke="#000"
+            strokeWidth="10" strokeLinecap="round" />
+          <circle cx="48" cy="32" r="4.5" fill="#000" />
+        </mask>
       </defs>
-      <rect width="64" height="64" rx="15" fill="var(--cf-panel)" />
-      <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="14.25" fill="none"
-        stroke="url(#cf-logo-ember)" strokeOpacity="0.55" strokeWidth="1.5" />
-      <g fill="none" strokeWidth="9" strokeLinecap="round">
-        <path d="M13 17 H35" stroke="var(--cf-blue-hi)" />
-        <path d="M13 32 H44" stroke="var(--cf-orange)" />
-        <path d="M13 47 H29" stroke="var(--cf-red)" />
-      </g>
-      <circle cx="50" cy="32" r="5.5" fill="var(--cf-ink)" />
+      <rect width="64" height="64" rx="15" fill="var(--cf-olive)" mask={`url(#${MASK})`} />
     </svg>
   );
 }
@@ -1561,7 +1340,7 @@ function Wordmark({ size = 32, className = "" }) {
   return (
     <span className={`flex items-center gap-2.5 ${className}`}>
       <LogoMark size={size} />
-      <span className="cf-display font-bold uppercase tracking-wide text-base leading-none">
+      <span className="cf-display font-medium uppercase tracking-wide text-base leading-none">
         Concourse
       </span>
     </span>
@@ -1643,7 +1422,7 @@ function Magnetic({ children, strength = 6, className = "", ...rest }) {
   return (
     <span ref={ref} onPointerMove={onMove} onPointerLeave={reset}
       className={`inline-block will-change-transform ${className}`}
-      style={{ transition: "transform .35s var(--cf-ease)" }} {...rest}>
+      style={{ transition: "transform var(--cf-t-state) var(--cf-ease)" }} {...rest}>
       {children}
     </span>
   );
@@ -1714,11 +1493,9 @@ function CountOnView({ value, prefix = "", suffix = "", duration = 1400 }) {
    the same `random`/PHI hash, the same intro timing that fans out from the centre and outro
    timing that collapses in from the edges via `u_reverse`.
 
-   What changed is the engine underneath it. The original mounts the shader through
-   @react-three/fiber, which pulls in Three.js — about 25MB for one screen's backdrop. This
-   app already ships @paper-design/shaders-react (~430KB), whose <ShaderMount> takes an
-   arbitrary fragment shader and supplies u_time/u_resolution on the same GLSL 3.00 ES
-   target. Two edits were needed to retarget it:
+   The WebGL dot-matrix version of this was removed. It pulled a ~430KB shader package to
+   animate coloured dots behind a sign-in card, which made the quietest screen in the
+   product the most expensive one to render. A static pool of light does the same job.
 
      - the R3F version declares `in vec2 fragCoord` from its own vertex shader; here the
        built-in gl_FragCoord is used instead, so no custom vertex stage is required;
@@ -1784,53 +1561,6 @@ void main() {
   fragColor.rgb *= fragColor.a;
 }`;
 
-/**
- * The dot grid itself. Lazy-loads the shader engine for the same reasons <MeshField> does:
- * it must not run during the server-render smoke test, and the bundle should not block paint.
- * If WebGL is unavailable the component simply renders nothing — it is pure decoration, and
- * the sign-in panel above it stands on its own.
- */
-function CanvasRevealEffect({ colors = [[255, 255, 255]], dotSize = 6, speed = 3, reverse = false, opacity = 1 }) {
-  const [Mount, setMount] = useState(null);
-
-  useEffect(() => {
-    try {
-      const probe = document.createElement("canvas");
-      if (!(probe.getContext("webgl2") || probe.getContext("webgl"))) return;
-    } catch { return; }
-    let alive = true;
-    import("@paper-design/shaders-react")
-      .then((m) => { if (alive && m?.ShaderMount) setMount(() => m.ShaderMount); })
-      .catch(() => {});
-    return () => { alive = false; };
-  }, []);
-
-  // The author's DotMatrix widens 1–3 supplied colours into the 6 the shader indexes into.
-  const uniforms = useMemo(() => {
-    const c = colors.length >= 3
-      ? [colors[0], colors[0], colors[1], colors[1], colors[2], colors[2]]
-      : colors.length === 2
-        ? [colors[0], colors[0], colors[0], colors[1], colors[1], colors[1]]
-        : Array(6).fill(colors[0]);
-    return {
-      u_colors: c.map(([r, g, b]) => [r / 255, g / 255, b / 255]),
-      u_opacities: [0.3, 0.3, 0.3, 0.5, 0.5, 0.5, 0.8, 0.8, 0.8, 1],
-      u_total_size: 20,
-      u_dot_size: dotSize,
-      u_reverse: reverse ? 1 : 0,
-      u_speed: speed * 0.1,
-    };
-  }, [colors, dotSize, reverse, speed]);
-
-  if (!Mount) return null;
-  return (
-    <div className="absolute inset-0" style={{ opacity }} aria-hidden="true">
-      <Mount fragmentShader={DOT_MATRIX_FRAGMENT} uniforms={uniforms}
-        style={{ width: "100%", height: "100%" }} />
-    </div>
-  );
-}
-
 /* ----------------------------------------------------------------------------
    Core header — supplied component, ported TSX → JS.
 
@@ -1872,7 +1602,7 @@ function CoreHeaderBar({ title, eyebrow, userName, userStatus = "Active now", us
             ...(onUserClick
               ? {
                   onClick: onUserClick,
-                  "aria-label": `Profile — ${userName}`,
+                  "aria-label": `Profile - ${userName}`,
                   className: "cf-focus rounded-full flex items-center gap-3 shrink-0 transition-opacity duration-200 hover:opacity-80",
                 }
               : { className: "flex items-center gap-3 shrink-0" }),
@@ -1897,7 +1627,7 @@ function CoreHeaderBar({ title, eyebrow, userName, userStatus = "Active now", us
                   : (
                     /* No profile behind this one — an initial on the role's own colour names the
                        account without inventing a face for it. */
-                    <span className="size-full rounded-full flex items-center justify-center cf-display font-black text-xs"
+                    <span className="size-full rounded-full flex items-center justify-center cf-display font-semibold text-xs"
                       style={{ background: `color-mix(in oklab, ${accent || "var(--cf-blue-hi)"} 22%, transparent)`, color: accent || "var(--cf-blue-hi)" }}>
                       {userName.trim().charAt(0).toUpperCase()}
                     </span>
@@ -1928,12 +1658,12 @@ function CoreStrip({ links, current, onChange, accent, transparent = false }) {
             <button key={l.href} type="button" onClick={() => onChange(l.href)}
               data-active={active} aria-current={active ? "page" : undefined}
               className="cf-strip-item cf-focus"
-              style={active ? { color: accent || "var(--cf-orange)" } : undefined}>
+              style={active ? { color: accent || "var(--cf-cobalt-text)" } : undefined}>
               {l.name}
               {active && (
                 <motion.span layoutId="cf-strip-underline" className="absolute left-0 right-0 bottom-0 h-0.5"
                   initial={false} transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                  style={{ background: accent || "var(--cf-orange)" }} />
+                  style={{ background: accent || "var(--cf-cobalt-text)" }} />
               )}
             </button>
           );
@@ -1958,245 +1688,99 @@ function CoreStrip({ links, current, onChange, accent, transparent = false }) {
    permanently cycling animation is the thing that setting exists to stop.
    -------------------------------------------------------------------------- */
 
-/**
- * Congestion spreading along the graph.
- *
- * A row of five zones. One goes critical, then its neighbours climb in sequence — the
- * propagation the model predicts, which a per-node threshold cannot see coming.
- */
-function DemoPropagation() {
-  const reduced = usePrefersReducedMotion();
-  const [step, setStep] = useState(reduced ? 2 : 0);
 
-  useEffect(() => {
-    if (reduced) return;
-    const t = setInterval(() => setStep((s) => (s + 1) % 5), 900);
-    return () => clearInterval(t);
-  }, [reduced]);
 
-  // Distance from the origin zone decides how hot each bar is, so the wave reads as
-  // travelling outward rather than as five independent blinks.
-  const heat = (i) => {
-    const d = Math.abs(i - 2);
-    const reach = step - d;
-    return reach <= 0 ? 0 : Math.min(1, reach / 2);
-  };
 
-  return (
-    // A fixed-height track keeps the bars vertically centred in the tile: percentage heights
-    // need a definite box to resolve against, and the flex parent alone does not give them one.
-    <div className="h-full flex items-center justify-center" aria-hidden="true">
-      <div className="flex items-end justify-center gap-2 h-24">
-        {[0, 1, 2, 3, 4].map((i) => {
-          const h = heat(i);
-          return (
-            <motion.div key={i} className="w-7 rounded-md"
-              animate={{ height: `${26 + h * 70}px`, backgroundColor: densityColor(h * 0.95) }}
-              transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-              style={{ height: "26px", background: densityColor(0) }} />
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
-/**
- * A route bending around a jam.
- *
- * The straight path through the middle turns red; the drawn line takes the long way round.
- * Two stroked paths on one viewBox, cross-fading, so the detour reads as a decision.
- */
-function DemoRoute() {
-  const reduced = usePrefersReducedMotion();
-  const [detour, setDetour] = useState(reduced);
 
-  useEffect(() => {
-    if (reduced) return;
-    const t = setInterval(() => setDetour((d) => !d), 2400);
-    return () => clearInterval(t);
-  }, [reduced]);
-
-  return (
-    <div className="h-full flex items-center justify-center" aria-hidden="true">
-      <svg viewBox="0 0 160 80" className="w-full max-w-[190px] h-full">
-        <line x1="12" y1="40" x2="148" y2="40" stroke="var(--cf-line2)" strokeWidth="2" strokeDasharray="3 4" />
-        <motion.circle cx="80" cy="40" r="9"
-          animate={{ fill: detour ? "var(--cf-red)" : "var(--cf-line2)", opacity: detour ? 0.9 : 0.45 }}
-          transition={{ duration: 0.5 }} />
-        <motion.path
-          d={detour ? "M12 40 Q 50 40 62 22 Q 80 6 98 22 Q 110 40 148 40" : "M12 40 L148 40"}
-          fill="none" stroke="var(--cf-blue-hi)" strokeWidth="2.5" strokeLinecap="round"
-          animate={{ d: detour ? "M12 40 Q 50 40 62 22 Q 80 6 98 22 Q 110 40 148 40" : "M12 40 L148 40" }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} />
-        <circle cx="12" cy="40" r="4" fill="var(--cf-green)" />
-        <circle cx="148" cy="40" r="4" fill="var(--cf-violet)" />
-      </svg>
-    </div>
-  );
-}
-
-/**
- * The paired baseline.
- *
- * Two bars — the run without rerouting against the run with it — counting to their values,
- * which is the entire claim of the results page in one picture.
- */
-function DemoBaseline() {
-  const reduced = usePrefersReducedMotion();
-  const [on, setOn] = useState(false);
-
-  useEffect(() => {
-    if (reduced) return;
-    // Asymmetric on purpose: a long rest at the real value, then a brief snap back to 100%
-    // to replay the drop. An even flip would leave the "no difference" frame on screen half
-    // the time.
-    let t;
-    const cycle = () => {
-      setOn(true);
-      t = setTimeout(() => { setOn(false); t = setTimeout(cycle, 2600); }, 380);
-    };
-    t = setTimeout(cycle, 2600);
-    return () => clearTimeout(t);
-  }, [reduced]);
-
-  // The baseline is the constant to compare against, so it stays pinned at 100%.
-  //
-  // The optimised bar rests at its real value and only springs back to 100% for the instant
-  // the loop replays. An earlier version split the cycle evenly between 72% and 100%, which
-  // meant half of every loop showed two identical bars — a state that says the intervention
-  // did nothing, i.e. the opposite of the claim, and reads as a broken chart when a
-  // screenshot happens to land on it.
-  const rows = [
-    { l: "NO STRATEGY", pct: 100, c: "var(--cf-red)" },
-    { l: "WITH STRATEGY", pct: on ? 100 : 72, c: "var(--cf-green)" },
-  ];
-
-  return (
-    <div className="h-full flex flex-col justify-center gap-4 w-full" aria-hidden="true">
-      {rows.map((r) => (
-        <div key={r.l}>
-          <div className="flex justify-between mb-1.5">
-            <span className="cf-accent text-[9px] cf-dim2">{r.l}</span>
-            <span className="cf-mono text-[10px] cf-tnum" style={{ color: r.c }}>{r.pct}%</span>
-          </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
-            <motion.div className="h-full rounded-full"
-              initial={false}
-              animate={{ width: `${r.pct}%` }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              style={{ background: r.c }} />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** Live tick counter — the ~100ms cadence, stated as a number that keeps moving. */
-function DemoTick() {
-  const reduced = usePrefersReducedMotion();
-  const [tick, setTick] = useState(1284);
-
-  useEffect(() => {
-    if (reduced) return;
-    const t = setInterval(() => setTick((n) => n + 1), 420);
-    return () => clearInterval(t);
-  }, [reduced]);
-
-  return (
-    <div className="h-full flex flex-col items-center justify-center gap-2" aria-hidden="true">
-      <div className="cf-display font-black text-4xl cf-tnum" style={{ color: "var(--cf-ink)" }}>
-        {tick.toLocaleString()}
-      </div>
-      <div className="flex items-center gap-1.5">
-        <span className="relative flex w-1.5 h-1.5">
-          {!reduced && <span className="cf-ping absolute inline-flex w-full h-full rounded-full" style={{ background: "var(--cf-green)" }} />}
-          <span className="relative inline-flex w-1.5 h-1.5 rounded-full" style={{ background: "var(--cf-green)" }} />
-        </span>
-        <span className="cf-accent text-[9px] cf-dim2">TICKS SIMULATED</span>
-      </div>
-    </div>
-  );
-}
-
-/**
- * In-memory sessions: the venue graph itself, with nodes lighting in sequence and no store
- * behind them. Deliberately abstract — the claim is about what is *absent*, so the picture
- * shows the graph standing alone rather than inventing a database icon to cross out.
- */
-function DemoGraph() {
-  const reduced = usePrefersReducedMotion();
-  const [lit, setLit] = useState(reduced ? 5 : 0);
-
-  useEffect(() => {
-    if (reduced) return;
-    const t = setInterval(() => setLit((n) => (n + 1) % 7), 700);
-    return () => clearInterval(t);
-  }, [reduced]);
-
-  const nodes = [
-    { x: 22, y: 46 }, { x: 60, y: 20 }, { x: 60, y: 68 },
-    { x: 104, y: 34 }, { x: 104, y: 72 }, { x: 142, y: 48 },
-  ];
-  const edges = [[0, 1], [0, 2], [1, 3], [2, 4], [3, 5], [4, 5], [1, 2]];
-
-  return (
-    <div className="h-full flex items-center justify-center" aria-hidden="true">
-      <svg viewBox="0 0 164 92" className="w-full max-w-[200px] h-full">
-        {edges.map(([a, b], i) => (
-          <line key={i} x1={nodes[a].x} y1={nodes[a].y} x2={nodes[b].x} y2={nodes[b].y}
-            stroke="var(--cf-line2)" strokeWidth="1.5" />
-        ))}
-        {nodes.map((n, i) => (
-          <motion.circle key={i} cx={n.x} cy={n.y} r="6"
-            animate={{
-              fill: i < lit ? "var(--cf-orange)" : "var(--cf-panel)",
-              opacity: i < lit ? 1 : 0.6,
-            }}
-            transition={{ duration: 0.4 }}
-            stroke="var(--cf-line2)" strokeWidth="1.5" />
-        ))}
-      </svg>
-    </div>
-  );
-}
-
-/** The three role portals, cycling — the same data, three different views. */
-function DemoPortals() {
-  const reduced = usePrefersReducedMotion();
-  const [active, setActive] = useState(0);
-  const roles = Object.values(ROLES);
-
-  useEffect(() => {
-    if (reduced) return;
-    const t = setInterval(() => setActive((a) => (a + 1) % 3), 1500);
-    return () => clearInterval(t);
-  }, [reduced]);
-
-  return (
-    <div className="h-full flex items-center justify-center gap-3" aria-hidden="true">
-      {roles.map((r, i) => (
-        <motion.div key={r.key} className="w-12 h-12 rounded-xl flex items-center justify-center"
-          animate={{
-            scale: active === i ? 1.12 : 1,
-            backgroundColor: active === i
-              ? `color-mix(in oklab, ${r.color} 24%, transparent)`
-              : "rgba(255,255,255,0.04)",
-          }}
-          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}>
-          <r.Icon className="w-5 h-5" strokeWidth={2}
-            style={{ color: active === i ? r.color : "var(--cf-dim2)" }} />
-        </motion.div>
-      ))}
-    </div>
-  );
-}
 
 /** A bento tile: spotlight surface + the shared tile material, with an optional accent. */
+/**
+ * One cell of the feature slab.
+ *
+ * The graphic takes the top and the text panel overlaps it, blurring whatever is
+ * behind so the copy stays readable over a moving demo without a solid plate cutting
+ * the artwork in half. `corners` is passed per cell because only the four outside
+ * corners of the grid are rounded.
+ */
+/**
+ * A cell in the capability grid, in one of three weights.
+ *
+ * `hero` is the dominant panel and gets a headline rather than a label; `compact` drops
+ * the photograph entirely and leads on a single number at display size; `medium` is the
+ * ordinary image cell. The three exist so the grid has a reading order - five cells of
+ * equal weight is a contact sheet, and the eye has nowhere to start.
+ *
+ * `color` is always a band from the density ramp. It paints the stat and the eyebrow, so
+ * the only saturated colour in the section is carried by measurements.
+ */
+function BentoCard({ variant = "medium", color, eyebrow, title, description, image, stat, statLabel }) {
+  const reduced = usePrefersReducedMotion();
+  const hero = variant === "hero";
+  const compact = variant === "compact";
+
+  return (
+    <motion.div
+      initial="idle"
+      whileHover={reduced ? undefined : "active"}
+      variants={{ idle: {}, active: {} }}
+      className="group relative flex flex-col overflow-hidden rounded-xl h-full cf-bento-cell"
+    >
+      {compact ? (
+        /* No photograph. The number is the image. */
+        <div className="relative z-20 flex flex-col justify-between h-full px-6 py-6">
+          <div className="cf-accent text-[10px]" style={{ color }}>{eyebrow}</div>
+          <div>
+            <div className="cf-display cf-tnum font-semibold leading-[0.9] mb-1"
+              style={{ fontSize: "clamp(2.4rem, 4.4vw, 3.4rem)", color, letterSpacing: "-0.04em" }}>
+              {stat}
+            </div>
+            <div className="cf-accent text-[10px] cf-dim2 mb-3">{statLabel}</div>
+            <p className="cf-display font-medium text-base tracking-tight"
+              style={{ color: "var(--cf-ink)" }}>{title}</p>
+            <p className="mt-1.5 text-sm leading-relaxed cf-dim">{description}</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className={`relative shrink-0 overflow-hidden ${hero ? "h-[19rem] sm:h-[24rem]" : "h-[15rem] sm:h-[17rem]"}`}>
+            <motion.img
+              src={image} alt="" aria-hidden="true" loading="lazy" decoding="async"
+              className="absolute inset-0 w-full h-full object-cover"
+              variants={{ idle: { scale: 1 }, active: { scale: 1.04 } }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            />
+            <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-28 pointer-events-none"
+              style={{ background: "linear-gradient(to top, var(--cf-card) 8%, transparent)" }} />
+          </div>
+          <div className={`relative z-20 isolate -mt-16 px-6 pb-7 pt-4 backdrop-blur-2xl ${hero ? "sm:px-8 sm:pb-9" : ""}`}
+            style={{ background: "linear-gradient(to top, var(--cf-card) 62%, rgba(239,233,221,.55))" }}>
+            <div className="cf-accent text-[10px] mb-2" style={{ color }}>{eyebrow}</div>
+            {hero ? (
+              <p className="cf-display font-semibold tracking-tight"
+                style={{ fontSize: "clamp(1.65rem, 2.6vw, 2.5rem)", lineHeight: 1.06,
+                         letterSpacing: "-0.035em", color: "var(--cf-ink)" }}>{title}</p>
+            ) : (
+              <p className="cf-display font-medium text-lg sm:text-xl tracking-tight"
+                style={{ color: "var(--cf-ink)" }}>{title}</p>
+            )}
+            <p className={`mt-2 leading-relaxed cf-dim ${hero ? "text-base max-w-[58ch]" : "text-sm max-w-[46ch]"}`}>
+              {description}
+            </p>
+          </div>
+        </>
+      )}
+      <motion.span aria-hidden="true" className="absolute inset-0 rounded-xl pointer-events-none"
+        variants={{ idle: { opacity: 0 }, active: { opacity: 1 } }}
+        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+        style={{ boxShadow: `inset 0 0 0 1px ${color}40` }} />
+    </motion.div>
+  );
+}
+
 function Bento({ color, className = "", children, ...rest }) {
   return (
-    <Spotlight color={color} className={`cf-bento rounded-2xl ${className}`} {...rest}>
+    <Spotlight color={color} className={`cf-bento rounded-md ${className}`} {...rest}>
       {children}
     </Spotlight>
   );
@@ -2265,11 +1849,24 @@ function DensityBar({ density, height = 4, color }) {
   );
 }
 
-function SectionHeading({ eyebrow, title, lede, center = false }) {
+function SectionHeading({ eyebrow, title, lede, index = null, center = false }) {
   return (
     <div className={`max-w-2xl mb-12 ${center ? "mx-auto text-center" : ""}`}>
+      {/* Oversized numeral: the one repeated device on the site. Held at low opacity
+          so it reads as structure rather than as a competing headline, and tucked
+          tight against the title it introduces. */}
+      {index !== null && (
+        <div className="cf-display font-medium leading-none mb-3 select-none" aria-hidden="true"
+          style={{ fontSize: "clamp(2.75rem, 5vw, 4rem)", letterSpacing: "-0.04em",
+                   color: "transparent",
+                   WebkitTextStroke: "1.4px rgba(33,30,26,0.28)",
+                   textShadow: "0 0 0 rgba(33,30,26,0.28)" }}>
+          {String(index).padStart(2, "0")}
+        </div>
+      )}
       <Eyebrow>{eyebrow}</Eyebrow>
-      <h2 className="cf-display font-black uppercase text-3xl sm:text-4xl tracking-tight mt-4 mb-3">{title}</h2>
+      <h2 className="cf-display font-medium text-3xl sm:text-4xl tracking-tight mt-4 mb-3"
+        style={{ letterSpacing: "-0.03em" }}>{title}</h2>
       <p className="cf-dim text-base leading-relaxed">{lede}</p>
     </div>
   );
@@ -2282,10 +1879,11 @@ function PageHeader({ eyebrow, title, lede }) {
           on large screens and just the bar below that. */}
       <div className="relative max-w-7xl mx-auto px-6 pt-32 lg:pt-40 pb-16">
         <Reveal>
-          <Eyebrow>{eyebrow}</Eyebrow>
-          <h1 className="cf-display font-black uppercase tracking-tight mt-5 mb-5" style={{ fontSize: "clamp(2.5rem, 5.5vw, 4rem)", lineHeight: 1.02 }}>
-            <GradientShimmer gradient="ember">{title}</GradientShimmer>
-          </h1>
+          {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
+          <ShimmerText as="h1" className={`cf-display mb-5 ${eyebrow ? "mt-5" : ""}`}
+            style={{ fontSize: "clamp(var(--cf-t-h05), 4.4vw, var(--cf-t-h07))", lineHeight: 1.19, fontWeight: 700 }}>
+            {title}
+          </ShimmerText>
           <p className="cf-dim text-lg leading-relaxed max-w-2xl">{lede}</p>
         </Reveal>
       </div>
@@ -2363,15 +1961,16 @@ function Header({ route, navigate, session, signOut, inPortal = false }) {
       <div aria-hidden="true" className="absolute inset-0 transition-opacity duration-300"
         style={{
           opacity: lifted ? 1 : 0,
-          background: "rgba(5,7,11,0.86)",
-          backdropFilter: "blur(14px) saturate(120%)",
-          WebkitBackdropFilter: "blur(14px) saturate(120%)",
+          background: "rgba(247,244,238,0.88)",
+          /* Light saturation: pushing it behind a warm ground turns the blur yellow. */
+          backdropFilter: "blur(10px) saturate(105%)",
+          WebkitBackdropFilter: "blur(10px) saturate(105%)",
           borderBottom: "1px solid var(--cf-line)",
         }} />
       <ScrollProgress />
       <div className="relative max-w-7xl mx-auto">
         <CoreHeaderBar
-          accent="var(--cf-orange)"
+          accent="var(--cf-cobalt-text)"
           /* Only a real session produces an identity here. The source component always drew
              an avatar and "Active now"; on a public page that would tell a logged-out
              visitor they are signed in.
@@ -2386,10 +1985,10 @@ function Header({ route, navigate, session, signOut, inPortal = false }) {
                 style={{ transitionTimingFunction: "var(--cf-ease)" }}>
                 <LogoMark size={30} />
               </span>
-              {/* The source wordmark is italic and tight; this typeface is already condensed,
-                  so tracking-tight on top of it closed the letterforms up. Normal tracking
-                  keeps "Concourse" legible at 16px. */}
-              <span className="cf-display font-bold uppercase text-base leading-none italic whitespace-nowrap">
+              {/* Montserrat is wide and circular, so at 16px the wordmark needs the room:
+                  tracking-tight on top of its own negative display tracking runs the
+                  round letters into each other. The italic here is the drawn one. */}
+              <span className="cf-display font-medium text-base leading-none italic whitespace-nowrap">
                 Concourse
               </span>
             </a>
@@ -2400,16 +1999,16 @@ function Header({ route, navigate, session, signOut, inPortal = false }) {
                 <div className="hidden lg:flex items-center gap-3">
                   <Magnetic strength={4}>
                     <a href={`#/app/${session.role}`} onClick={(e) => go(e, `/app/${session.role}`)}
-                      className="cf-focus cf-btn-primary cf-shine rounded-lg px-4 py-2 cf-accent text-[11px] block">
+                      className="cf-focus cf-btn-primary rounded px-4 py-2 cf-accent text-[11px] block">
                       MY PORTAL
                     </a>
                   </Magnetic>
-                  <button onClick={signOut} className="cf-focus cf-btn-outline rounded-lg px-3.5 py-2 cf-accent text-[10px]">SIGN OUT</button>
+                  <button onClick={signOut} className="cf-focus cf-btn-outline rounded px-3.5 py-2 cf-accent text-[10px]">SIGN OUT</button>
                 </div>
               ) : (
                 <div className="hidden lg:flex items-center gap-3">
                   <Magnetic strength={4}>
-                    <a href="#/access" onClick={(e) => go(e, "/access")} className="cf-focus cf-btn-primary cf-shine rounded-lg px-4 py-2 cf-accent text-[11px] block">
+                    <a href="#/access" onClick={(e) => go(e, "/access")} className="cf-focus cf-btn-primary rounded px-4 py-2 cf-accent text-[11px] block">
                       OPEN PORTAL
                     </a>
                   </Magnetic>
@@ -2419,7 +2018,7 @@ function Header({ route, navigate, session, signOut, inPortal = false }) {
                   open. Sign out lives in the portal's own bar. */}
               {!inPortal && (
                 <button onClick={() => setOpen((v) => !v)} aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open}
-                  className="lg:hidden cf-focus cf-btn-outline rounded-lg w-9 h-9 flex items-center justify-center">
+                  className="lg:hidden cf-focus cf-btn-outline rounded w-9 h-9 flex items-center justify-center">
                   {open ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
                 </button>
               )}
@@ -2437,7 +2036,7 @@ function Header({ route, navigate, session, signOut, inPortal = false }) {
         <div className={inPortal ? "hidden" : "hidden lg:block"}>
           {/* At rest the header is transparent over the hero, so the strip drops its own
               background and rules to match; they fade in together on scroll. */}
-          <CoreStrip accent="var(--cf-orange)" current={route} transparent={!solid && !open}
+          <CoreStrip accent="var(--cf-cobalt-text)" current={route} transparent={!solid && !open}
             onChange={(href) => navigate(href)}
             links={NAV.map((r) => ({ name: r.label, href: r.path }))} />
         </div>
@@ -2454,23 +2053,23 @@ function Header({ route, navigate, session, signOut, inPortal = false }) {
                   initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.04 * i + 0.05, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                   className="cf-accent text-sm py-2.5 cf-focus rounded flex items-center justify-between"
-                  style={{ color: route === r.path ? "var(--cf-orange)" : "var(--cf-dim)" }}>
+                  style={{ color: route === r.path ? "var(--cf-cobalt-text)" : "var(--cf-dim)" }}>
                   {r.label.toUpperCase()}
-                  {route === r.path && <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--cf-orange)" }} />}
+                  {route === r.path && <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--cf-cobalt)" }} />}
                 </motion.a>
               ))}
               {session ? (
                 <>
                   <a href={`#/app/${session.role}`} onClick={(e) => go(e, `/app/${session.role}`)}
-                    className="cf-focus cf-btn-primary cf-shine rounded-lg px-4 py-2.5 cf-accent text-[11px] text-center mt-3">
+                    className="cf-focus cf-btn-primary rounded px-4 py-2.5 cf-accent text-[11px] text-center mt-3">
                     MY PORTAL
                   </a>
-                  <button onClick={signOut} className="cf-focus cf-btn-outline rounded-lg px-4 py-2.5 cf-accent text-[10px] mt-2">
+                  <button onClick={signOut} className="cf-focus cf-btn-outline rounded px-4 py-2.5 cf-accent text-[10px] mt-2">
                     SIGN OUT
                   </button>
                 </>
               ) : (
-                <a href="#/access" onClick={(e) => go(e, "/access")} className="cf-focus cf-btn-primary cf-shine rounded-lg px-4 py-2.5 cf-accent text-[11px] text-center mt-3">
+                <a href="#/access" onClick={(e) => go(e, "/access")} className="cf-focus cf-btn-primary rounded px-4 py-2.5 cf-accent text-[11px] text-center mt-3">
                   OPEN PORTAL
                 </a>
               )}
@@ -2486,26 +2085,18 @@ function Header({ route, navigate, session, signOut, inPortal = false }) {
    Marketing pages
    ========================================================================== */
 
-function WordCarousel({ words, interval = 2500 }) {
+function WordCarousel({ words, interval = 3200 }) {
   const [cur, setCur] = useState(0);
-  const reduced = usePrefersReducedMotion();
   useEffect(() => {
-    if (reduced) return;
     const t = setInterval(() => setCur((p) => (p + 1) % words.length), interval);
     return () => clearInterval(t);
-  }, [interval, words.length, reduced]);
+  }, [interval, words.length]);
+
   return (
-    <span className="relative inline-flex w-full justify-center overflow-hidden align-bottom" style={{ height: "1.15em" }}>
-      &nbsp;
-      {words.map((w, i) => (
-        <span key={w} className="absolute" style={{
-          transform: reduced ? "none" : `translateY(${i === cur ? "0" : i < cur ? "-120%" : "120%"})`,
-          opacity: i === cur ? 1 : 0,
-          transition: reduced ? "none" : "transform .6s var(--cf-ease), opacity .5s ease",
-        }}>
-          <GradientShimmer gradient="ember">{w}</GradientShimmer>
-        </span>
-      ))}
+    <span className="relative inline-flex w-full justify-center align-bottom"
+      style={{ height: "1.15em", color: "var(--cf-olive)" }}>
+      {/* Keyed on the word so each cycle mounts a fresh path and the pen starts over. */}
+      <HandwritingWord key={words[cur]} text={words[cur]} />
     </span>
   );
 }
@@ -2540,8 +2131,8 @@ function ShowcaseNote({ live }) {
   return (
     <p className="cf-mono text-[10px] cf-dim2 mt-3 text-center">
       {live
-        ? "LIVE — streaming from a running session"
-        : "SAMPLE LAYOUT — no session running; start one from the client portal"}
+        ? "LIVE · streaming from a running session"
+        : "SAMPLE LAYOUT · no session running; start one from the client portal"}
     </p>
   );
 }
@@ -2569,7 +2160,7 @@ function RolePreviewWalker({ color }) {
       {/* The route the walker is given, drawn over the plan in the accent. */}
       <path d="M28 88 Q 52 88 70 74 T 128 34 Q 150 26 172 26" fill="none"
         stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeDasharray="4 6" />
-      <circle cx="172" cy="26" r="4.5" fill="var(--cf-violet)" />
+      <circle cx="172" cy="26" r="4.5" fill="var(--cf-way-out)" />
       <g>
         <circle cx="28" cy="88" r="9" fill={color} opacity=".18" />
         <circle cx="28" cy="88" r="4" fill={color} />
@@ -2641,6 +2232,9 @@ function HomePage({ navigate }) {
   const { venue, people, live } = useShowcase();
   return (
     <div className="cf-page-in">
+      {/* The one interactive zone on the site. Bounded to the hero so the grid reads as
+          a designated field rather than as wallpaper, and inert everywhere else. */}
+      <KineticField>
       <section className="relative px-6 pt-28 lg:pt-36 pb-16 overflow-hidden">
         {/* Slow conic wash behind the headline only. Clipped by the section so it never
             bleeds into the cards below, and sat under the mesh veil so it reads as depth
@@ -2655,29 +2249,29 @@ function HomePage({ navigate }) {
             <a href="#/access" onClick={(e) => { e.preventDefault(); navigate("/access"); }}
               className="cf-focus cf-accent group inline-flex items-center gap-3 text-[11px] cf-chip rounded-full pl-4 pr-3 py-2 mb-10 cf-dim hover:border-(--cf-line2) transition-colors">
               <span className="relative flex w-1.5 h-1.5">
-                <span className="cf-ping absolute inline-flex w-full h-full rounded-full" style={{ background: "var(--cf-orange)" }} />
-                <span className="relative inline-flex w-1.5 h-1.5 rounded-full" style={{ background: "var(--cf-orange)" }} />
+                <span className="cf-ping absolute inline-flex w-full h-full rounded-full" style={{ background: "var(--cf-sage)" }} />
+                <span className="relative inline-flex w-1.5 h-1.5 rounded-full" style={{ background: "var(--cf-sage)" }} />
               </span>
               THREE PORTALS · ONE LIVE MAP
               <MoveRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" />
             </a>
-            <h1 className="cf-display font-black uppercase tracking-tight max-w-4xl mx-auto" style={{ fontSize: "clamp(2.5rem, 6.5vw, 5rem)", lineHeight: 1 }}>
-              <span className="block"><GradientShimmer gradient="ember">Know where the crowd</GradientShimmer></span>
-              <span className="block"><GradientShimmer gradient="ember">is going to break —</GradientShimmer></span>
+            <h1 className="cf-display tracking-tight max-w-4xl mx-auto" style={{ fontSize: "clamp(var(--cf-t-h05), 5.6vw, 4.25rem)", lineHeight: 1.06, fontWeight: 800 }}>
+              <ShimmerText as="span" className="block" delay={0.6}>Know where the crowd</ShimmerText>
+              <ShimmerText as="span" className="block" delay={0.9}>is going to break</ShimmerText>
               <WordCarousel words={["live.", "predictive.", "measurable.", "on every phone."]} />
             </h1>
             <p className="mt-6 max-w-xl mx-auto leading-relaxed cf-dim" style={{ fontSize: "clamp(1rem, 1.4vw, 1.15rem)" }}>
               Attendees see themselves on the venue map. Organisers see every zone filling in real time.
-              We see the whole network — and the bottleneck forming three ticks before it does.
+              We see the whole network, and the bottleneck forming three ticks before it does.
             </p>
             <div className="mt-8 flex flex-wrap gap-3 justify-center">
               <Magnetic>
-                <button onClick={() => navigate("/access")} className="cf-focus cf-btn-primary cf-shine rounded-xl px-7 py-3.5 cf-display font-bold uppercase text-sm tracking-wide">
+                <button onClick={() => navigate("/access")} className="cf-focus cf-btn-primary rounded px-7 py-3.5 cf-display font-semibold text-sm tracking-wide">
                   Open a portal
                 </button>
               </Magnetic>
               <Magnetic>
-                <button onClick={() => navigate("/platform")} className="cf-focus cf-btn-outline rounded-xl px-7 py-3.5 cf-display font-bold uppercase text-sm tracking-wide">
+                <button onClick={() => navigate("/platform")} className="cf-focus cf-btn-outline rounded px-7 py-3.5 cf-display font-semibold text-sm tracking-wide">
                   See the platform
                 </button>
               </Magnetic>
@@ -2692,17 +2286,12 @@ function HomePage({ navigate }) {
             <div className="mt-12 max-w-5xl mx-auto relative">
               <div className="absolute -inset-x-8 -bottom-6 h-24 pointer-events-none opacity-60" aria-hidden="true"
                 style={{ background: "radial-gradient(60% 100% at 50% 100%, rgba(225,6,0,.45), transparent 70%)", filter: "blur(28px)" }} />
-              <div className="relative rounded-3xl p-2 cf-card-solid" style={{ boxShadow: "var(--cf-shadow-lg)" }}>
+              <div className="relative rounded-md p-2 cf-card-solid" style={{ boxShadow: "var(--cf-shadow-lg)" }}>
                 <div className="flex items-center justify-between px-3 py-2">
-                  <div className="flex items-center gap-1.5" aria-hidden="true">
-                    {["var(--cf-red)", "var(--cf-amber)", "var(--cf-green)"].map((c) => (
-                      <span key={c} className="w-2.5 h-2.5 rounded-full" style={{ background: c, opacity: 0.55 }} />
-                    ))}
-                  </div>
                   <span className="cf-mono text-[10px] cf-dim2 tracking-widest">{venue.name?.toUpperCase() ?? "VENUE"}</span>
                   <ConnectionPill connected={live} status={live ? "RUNNING" : "CREATED"} />
                 </div>
-                <div className="rounded-2xl overflow-hidden">
+                <div className="rounded-md overflow-hidden">
                   <VenueMap venue={venue} people={people} me={null} height={440} />
                 </div>
               </div>
@@ -2721,9 +2310,10 @@ function HomePage({ navigate }) {
           </div>
         </Reveal>
       </section>
+      </KineticField>
 
-      <section className="max-w-7xl mx-auto px-6 py-20 border-t cf-hairline">
-        <Reveal><SectionHeading eyebrow="WHO IT'S FOR" title="Three views of the same venue" lede="Same live data, three very different jobs — and each portal only ever shows what that role should see." center /></Reveal>
+      <section className="max-w-7xl mx-auto px-6 py-28 lg:py-36 border-t cf-hairline">
+        <Reveal><SectionHeading index={1} eyebrow="WHO IT'S FOR" title="Three views of the same venue" lede="Same live data, three very different jobs, and each portal only ever shows what that role should see." center /></Reveal>
 
         {/* Role cards.
          *
@@ -2739,10 +2329,10 @@ function HomePage({ navigate }) {
          */}
         <div className="grid md:grid-cols-3 gap-5">
           {[
-            { n: "01", Preview: RolePreviewWalker, role: "Walker", t: "Attendees", d: "See yourself on the venue map and get the nearest clear way out.", to: "/login/walker", c: "var(--cf-blue-hi)" },
-            { n: "02", Preview: RolePreviewClient, role: "Client", t: "Organisers", d: "Upload a floor plan and watch occupancy fill zone by zone.", to: "/login/client", c: "var(--cf-orange)" },
-            { n: "03", Preview: RolePreviewAdmin, role: "Admin", t: "Operations", d: "Every venue, every layout, every bottleneck, on one board.", to: "/login/admin", c: "var(--cf-red-text)" },
-          ].map(({ n, Preview, role, t, d, to, c }, i) => (
+            { n: "01", art: "/bento/walker.webp", Preview: RolePreviewWalker, role: "Walker", t: "Attendees", d: "See yourself on the venue map and get the nearest clear way out.", to: "/login/walker", c: "var(--cf-cobalt-text)" },
+            { n: "02", art: "/bento/client.webp", Preview: RolePreviewClient, role: "Client", t: "Organisers", d: "Upload a floor plan and watch occupancy fill zone by zone.", to: "/login/client", c: "var(--cf-cobalt-text)" },
+            { n: "03", art: "/bento/admin.webp", Preview: RolePreviewAdmin, role: "Admin", t: "Operations", d: "Every venue, every layout, every bottleneck, on one board.", to: "/login/admin", c: "var(--cf-cobalt-text)" },
+          ].map(({ n, art, Preview, role, t, d, to, c }, i) => (
             <Reveal key={role} delay={i * 80} className="h-full">
               <Spotlight as="button" color={c} onClick={() => navigate(to)}
                 className="cf-focus cf-rolecard group w-full h-full text-left flex flex-col">
@@ -2750,14 +2340,20 @@ function HomePage({ navigate }) {
                 {/* Live art. Sits in its own bay with the accent bleeding up from the floor,
                     so the colour arrives as light rather than as a filled swatch. */}
                 <span className="cf-rolecard-art" style={{ "--accent": c }}>
+                  {/* Generated arc behind the live preview, so the bay has depth and the
+                      three cards differ by artwork rather than by tinting the same shape. */}
+                  <img src={art} alt="" aria-hidden="true" loading="lazy" decoding="async"
+                    className="absolute inset-0 w-full h-full object-cover opacity-85
+                               transition-transform duration-700 group-hover:scale-105"
+                    style={{ transitionTimingFunction: "var(--cf-ease)" }} />
                   <span className="cf-rolecard-glow" aria-hidden="true" />
-                  <Preview color={c} />
+                  <span className="relative" style={{ mixBlendMode: "screen", opacity: .8 }}><Preview color={c} /></span>
                   <span aria-hidden="true" className="cf-rolecard-index cf-display">{n}</span>
                 </span>
 
                 <span className="flex-1 flex flex-col px-6 pt-5 pb-6">
                   <span className="cf-accent text-[10px] cf-dim2 mb-1.5 block">{role.toUpperCase()} PORTAL</span>
-                  <span className="cf-display font-black uppercase text-2xl tracking-tight leading-none mb-2.5 block">{t}</span>
+                  <span className="cf-display font-semibold text-2xl tracking-tight leading-none mb-2.5 block">{t}</span>
                   <span className="text-sm cf-dim leading-relaxed block">{d}</span>
                 </span>
 
@@ -2774,79 +2370,85 @@ function HomePage({ navigate }) {
       {/* Capability bento. Asymmetric on purpose: the prediction claim is the one that
           differentiates the product, so it gets the wide tile and the others read as
           supporting evidence rather than a flat list of equals. */}
-      <section className="max-w-7xl mx-auto px-6 py-20 border-t cf-hairline">
-        <Reveal><SectionHeading eyebrow="WHAT IT DOES" title="Built to see it coming"
+      {/* The problem, stated as a picture rather than a claim. Placed between the role
+          cards and the feature slab so the page has one moment that is not interface. */}
+      <PhotoBand
+        src="https://images.unsplash.com/photo-1539657523674-fbd149b04c13?w=2000&q=72&auto=format&fit=crop"
+        alt="A dense crowd packed shoulder to shoulder, seen from above"
+        caption="Ninety thousand people, one set of doors, and about four minutes." />
+
+      {/* The argument, paced one clause at a time. It sits between the photograph and the
+          capability grid on purpose: the picture states the problem, this explains why it
+          is a problem, and the grid answers it. */}
+      <section className="border-t cf-hairline">
+        <ReadingReveal />
+      </section>
+
+      <section className="max-w-7xl mx-auto px-6 py-28 lg:py-36 border-t cf-hairline">
+        <Reveal><SectionHeading index={2} eyebrow="WHAT IT DOES" title="Built to see it coming"
           lede="A threshold tells you a zone is full. The point of this system is to tell you which zone is about to be." center /></Reveal>
 
-        {/* Six columns on desktop so tiles can be 2- or 3-wide and the row rhythm changes down
-            the grid. Each tile is a live demo above its label: the animation is the evidence
-            for the claim, not decoration beside it. */}
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 md:auto-rows-[13rem]">
-          {[
-            {
-              d: 0, span: "md:col-span-2 md:row-span-2", color: "var(--cf-orange)", Demo: DemoPropagation,
-              Icon: Radio, t: "Predicts, not reports",
-              p: "Congestion propagates along the venue's own walkway graph, so a quiet zone about to be hit by an overrunning neighbour is flagged before it fills — not once it already has.",
-            },
-            {
-              d: 80, span: "md:col-span-2", color: "var(--cf-blue-hi)", Demo: DemoRoute,
-              Icon: Navigation, t: "Routes around it",
-              p: "Paths weighted by live congestion — around the jam, not through it.",
-            },
-            {
-              d: 160, span: "md:col-span-2 md:row-span-2", color: "var(--cf-green)", Demo: DemoBaseline,
-              Icon: ShieldCheck, t: "Proves it worked",
-              p: "A hidden baseline runs the same crowd and seed with rerouting off, so the before/after is measured, not estimated.",
-            },
-            {
-              d: 240, span: "md:col-span-2", color: "var(--cf-amber)", Demo: DemoTick,
-              Icon: Activity, t: "Runs in real time",
-              p: "Thousands of agents, roughly ten ticks a second.",
-            },
-            {
-              d: 320, span: "md:col-span-3", color: "var(--cf-blue-hi)", Demo: DemoPortals,
-              Icon: Users, t: "Three views, one venue",
-              p: "Attendees, organisers and operations each see exactly what their job needs — and nothing beyond it.",
-            },
-            {
-              d: 400, span: "md:col-span-3", color: "var(--cf-orange)", Demo: DemoGraph,
-              Icon: Layers, t: "No database required",
-              p: "Sessions run in memory against the venue graph, so there is nothing to provision before a demo.",
-            },
-          ].map(({ d, span, color, Demo, Icon, t, p }) => (
-            <Reveal key={t} delay={d} className={span}>
-              <Bento color={color} className="p-6 h-full flex flex-col">
-                <div className="flex-1 min-h-0"><Demo /></div>
-                <div className="mt-4">
-                  <div className="cf-display font-bold uppercase text-lg tracking-wide mb-1.5 flex items-center gap-2">
-                    <Icon className="w-4 h-4 shrink-0" style={{ color }} strokeWidth={2} />
-                    {t}
-                  </div>
-                  <p className="text-sm cf-dim leading-relaxed">{p}</p>
-                </div>
-              </Bento>
+        {/* One dominant panel, two numbers beside it, two ordinary cells beneath.
+
+            Two grids rather than one with row spans: the right-hand stack has to total
+            the hero's height exactly, and stating both heights directly is sturdier than
+            auto-row arithmetic that shifts the moment a line of copy wraps. */}
+        <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 mb-4">
+          <Reveal className="lg:col-span-4 lg:h-[34rem]">
+            <BentoCard variant="hero" color="var(--cf-attention)" eyebrow="Prediction"
+              image="/bento/prediction.webp"
+              title="Predicts, not reports"
+              description="Congestion propagates along the venue's own walkway graph, so a quiet zone about to be hit by an overrunning neighbour is flagged before it fills, not once it already has." />
+          </Reveal>
+          <div className="lg:col-span-2 flex flex-col gap-4 lg:h-[34rem]">
+            <Reveal delay={70} className="flex-1 min-h-[15rem]">
+              <BentoCard variant="compact" color="var(--cf-blue-hi)" eyebrow="Throughput"
+                stat="10/s" statLabel="SIMULATION TICKS"
+                title="Runs in real time"
+                description="Thousands of agents, stepped roughly ten times a second." />
             </Reveal>
-          ))}
+            <Reveal delay={140} className="flex-1 min-h-[15rem]">
+              <BentoCard variant="compact" color="var(--cf-coral)" eyebrow="Evidence"
+                stat="28%" statLabel="LESS TIME CRITICAL"
+                title="Proves it worked"
+                description="A hidden baseline runs the same crowd and seed with rerouting off, so the before and after is measured rather than claimed." />
+            </Reveal>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Reveal delay={210}>
+            <BentoCard color="var(--cf-blue-hi)" eyebrow="Routing" image="/bento/routing.webp"
+              title="Routes around it"
+              description="Paths weighted by live congestion, around the jam rather than through it." />
+          </Reveal>
+          <Reveal delay={280}>
+            <BentoCard color="var(--cf-attention)" eyebrow="Access" image="/bento/access.webp"
+              title="Three views, one venue"
+              description="Attendees, organisers and operations each see what their job needs, and nothing beyond it." />
+          </Reveal>
         </div>
       </section>
 
       <section className="relative">
         {/* Fades to nothing at both ends instead of butting into a hard edge. */}
         <span aria-hidden="true" className="block max-w-7xl mx-auto cf-rule" />
-        <div className="max-w-7xl mx-auto px-6 py-16 relative">
+        <div className="max-w-7xl mx-auto px-6 py-24 lg:py-28 relative">
           <Reveal>
-            <div className="grid grid-cols-2 md:grid-cols-4 rounded-2xl overflow-hidden cf-statband">
+            <div className="grid grid-cols-2 md:grid-cols-4 rounded-md overflow-hidden cf-statband">
               {[
-                { to: 2500, suffix: "", l: "AGENTS PER RUN" },
-                { to: 100, prefix: "~", suffix: "ms", l: "TICK INTERVAL" },
-                { to: 28, suffix: "%", l: "LESS TIME CRITICAL", c: "var(--cf-green)" },
-                { to: 0, suffix: "", l: "DATABASES REQUIRED" },
+                { to: 2500, suffix: "", l: "Agents per run" },
+                { to: 100, prefix: "~", suffix: "ms", l: "Tick interval" },
+                { to: 28, suffix: "%", l: "Less time critical", c: "var(--cf-sage)" },
+                { to: 0, suffix: "", l: "Databases required" },
               ].map((s) => (
-                <Spotlight key={s.l} className="px-6 py-8 cf-statcell">
-                  <div className="cf-display font-black text-3xl mb-1 cf-tnum" style={{ color: s.c || "var(--cf-ink)" }}>
+                <Spotlight key={s.l} className="px-6 py-10 cf-statcell">
+                  {/* The number carries the cell. Everything else is annotation. */}
+                  <div className="cf-display font-semibold cf-tnum leading-none mb-3"
+                    style={{ color: s.c || "var(--cf-ink)",
+                             fontSize: "clamp(2.4rem, 4.2vw, 3.4rem)", letterSpacing: "-0.04em" }}>
                     <CountOnView value={s.to} prefix={s.prefix} suffix={s.suffix} />
                   </div>
-                  <div className="cf-accent text-[11px] cf-dim2">{s.l}</div>
+                  <div className="text-[13px] cf-dim">{s.l}</div>
                 </Spotlight>
               ))}
             </div>
@@ -2857,15 +2459,15 @@ function HomePage({ navigate }) {
 
       <section className="max-w-7xl mx-auto px-6 py-24 text-center">
         <Reveal>
-          <h2 className="cf-display font-black uppercase tracking-tight mb-5" style={{ fontSize: "clamp(1.9rem, 4vw, 3rem)", lineHeight: 1.05 }}>
-            <GradientShimmer gradient="ember">Open a portal and watch a venue fill</GradientShimmer>
+          <h2 className="cf-display font-semibold tracking-tight mb-5" style={{ fontSize: "clamp(var(--cf-t-h04), 3.2vw, var(--cf-t-h06))", lineHeight: 1.19 }}>
+            Open a portal and watch a venue fill
           </h2>
           <p className="cf-dim max-w-xl mx-auto leading-relaxed mb-8">
             Three roles, one live map. Start a session from the client portal and the whole
-            system — map, timing tower, before/after — comes alive against it.
+            system (map, timing tower, before/after) comes alive against it.
           </p>
           <Magnetic>
-            <button onClick={() => navigate("/access")} className="cf-focus cf-btn-primary cf-shine rounded-xl px-8 py-4 cf-display font-bold uppercase text-sm tracking-wide">
+            <button onClick={() => navigate("/access")} className="cf-focus cf-btn-primary rounded px-8 py-4 cf-display font-semibold text-sm tracking-wide">
               Choose your portal
             </button>
           </Magnetic>
@@ -2884,38 +2486,42 @@ function HomePage({ navigate }) {
  */
 function HowItWorksPage({ navigate }) {
   const steps = [
-    { n: "01", Icon: Upload, c: "var(--cf-orange)", t: "Upload the floor plan",
+    { n: "01", Icon: Upload, c: "var(--cf-cobalt-text)", t: "Upload the floor plan",
       d: "A flat 2D image is all that is needed. No CAD, no survey, no site visit.",
       note: "CLIENT PORTAL · ONE IMAGE" },
-    { n: "02", Icon: Network, c: "var(--cf-orange)", t: "AI traces it into a graph",
-      d: "Halls, corridors, gates and the walkable edges between them become a routable network — the structure everything downstream reasons over.",
+    { n: "02", Icon: Network, c: "var(--cf-cobalt-text)", t: "AI traces it into a graph",
+      d: "Halls, corridors, gates and the walkable edges between them become a routable network. The structure everything downstream reasons over.",
       note: "AUTOMATED TRACING · EDITABLE" },
-    { n: "03", Icon: Users, c: "var(--cf-blue-hi)", t: "Attendees check in",
+    { n: "03", Icon: Users, c: "var(--cf-cobalt-text)", t: "Attendees check in",
       d: "A venue code on your signage puts each device on the map. Only anonymous position inside the geofence is ever used.",
       note: "WALKER PORTAL · VENUE CODE" },
-    { n: "04", Icon: Cpu, c: "var(--cf-blue-hi)", t: "The model looks ahead",
+    { n: "04", Icon: Cpu, c: "var(--cf-cobalt-text)", t: "The model looks ahead",
       d: "Density, trend and history propagate across the graph, so risk is predicted at a zone's neighbours before that zone itself is full.",
       note: "CONGESTION-PROPAGATION GNN" },
     { n: "05", Icon: Navigation, c: "var(--cf-amber)", t: "Routes bend around the jam",
       d: "Paths are weighted by live congestion, so the way out an attendee is shown goes around the crush rather than into it.",
       note: "PER-ATTENDEE REROUTING" },
     { n: "06", Icon: Radio, c: "var(--cf-red)", t: "Operators get a sentence",
-      d: "Density vectors become the actual line a marshal can act on — hold intake here, stage arrivals there.",
+      d: "Density vectors become the actual line a marshal can act on: hold intake here, stage arrivals there.",
       note: "GENERATED ADVISORY" },
   ];
 
   return (
     <div className="cf-page-in">
       <PageHeader eyebrow="HOW IT WORKS" title="Floor plan to instruction"
-        lede="Six steps from a flat image of your venue to a sentence a marshal can act on — and the point at which each one stops being a guess." />
+        lede="Six steps from a flat image of your venue to a sentence a marshal can act on, and the point at which each one stops being a guess." />
 
-      <section className="max-w-5xl mx-auto px-6 py-20">
+      <PhotoBand graded src="/bento/routing.webp"
+        alt="A concourse with people crossing it in every direction"
+        caption="One flat image in. A routable network out." />
+
+      <section className="max-w-5xl mx-auto px-6 py-28 lg:py-36">
         {/* A vertical spine with the steps hung off it. The rail is drawn behind the markers
             and stops short at the last one, so the sequence reads as finite rather than
             continuing off the bottom of the page. */}
         <div className="relative">
           <span aria-hidden="true" className="absolute left-[19px] top-3 bottom-14 w-px hidden sm:block"
-            style={{ background: "linear-gradient(180deg, var(--cf-orange), var(--cf-blue-hi), var(--cf-red), transparent)", opacity: 0.45 }} />
+            style={{ background: "linear-gradient(180deg, var(--cf-metal), var(--cf-line2), transparent)", opacity: 0.6 }} />
 
           <div className="flex flex-col gap-4">
             {steps.map(({ n, Icon, c, t, d, note }, i) => (
@@ -2925,10 +2531,10 @@ function HowItWorksPage({ navigate }) {
                     style={{ borderColor: c }}>
                     <Icon className="w-4 h-4" style={{ color: c }} strokeWidth={2} />
                   </span>
-                  <Spotlight color={c} className="cf-bento rounded-2xl p-6 flex-1">
+                  <Spotlight color={c} className="cf-bento rounded-md p-6 flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <span className="cf-mono text-[11px]" style={{ color: c }}>{n}</span>
-                      <span className="cf-display font-bold uppercase text-lg tracking-wide">{t}</span>
+                      <span className="cf-display font-medium text-lg tracking-wide">{t}</span>
                     </div>
                     <p className="text-sm cf-dim leading-relaxed mb-3">{d}</p>
                     <span className="cf-accent text-[10px] cf-dim2">{note}</span>
@@ -2942,22 +2548,22 @@ function HowItWorksPage({ navigate }) {
 
       <section className="max-w-7xl mx-auto px-6 pb-24">
         <Reveal>
-          <Spotlight className="cf-bento rounded-2xl p-8 text-center">
-            <div className="cf-display font-black uppercase text-2xl tracking-tight mb-3">
-              <GradientShimmer gradient="ember">See it running</GradientShimmer>
+          <Spotlight className="cf-bento rounded-md p-8 text-center">
+            <div className="cf-display font-semibold text-2xl tracking-tight mb-3">
+              See it running
             </div>
             <p className="cf-dim text-sm leading-relaxed max-w-xl mx-auto mb-7">
-              Start a session from the client portal and every surface on this site — the live board,
-              the timing tower, the before/after — starts reporting against it.
+              Start a session from the client portal and every surface on this site, the live board,
+              the timing tower and the before/after, starts reporting against it.
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
               <Magnetic>
-                <button onClick={() => navigate("/access")} className="cf-focus cf-btn-primary cf-shine rounded-xl px-7 py-3.5 cf-display font-bold uppercase text-sm tracking-wide">
+                <button onClick={() => navigate("/access")} className="cf-focus cf-btn-primary rounded px-7 py-3.5 cf-display font-semibold text-sm tracking-wide">
                   Open a portal
                 </button>
               </Magnetic>
               <Magnetic>
-                <button onClick={() => navigate("/platform")} className="cf-focus cf-btn-outline rounded-xl px-7 py-3.5 cf-display font-bold uppercase text-sm tracking-wide">
+                <button onClick={() => navigate("/platform")} className="cf-focus cf-btn-outline rounded px-7 py-3.5 cf-display font-semibold text-sm tracking-wide">
                   See the live board
                 </button>
               </Magnetic>
@@ -2976,25 +2582,29 @@ function PlatformPage({ navigate }) {
 
   return (
     <div className="cf-page-in">
-      <PageHeader eyebrow="PLATFORM" title="The live board"
+      <PageHeader title="The live board"
         lede="Every zone ranked by what's about to happen, on a map that behaves like the one already in everyone's pocket." />
 
-      <section className="max-w-7xl mx-auto px-6 py-16 border-b cf-hairline">
+      <PhotoBand graded src="/bento/throughput.webp"
+        alt="A stadium seen from directly overhead"
+        caption="Every zone, every tick, on one board." />
+
+      <section className="max-w-7xl mx-auto px-6 py-24 lg:py-28 border-b cf-hairline">
         <div className="flex flex-wrap items-center gap-3 mb-6">
-          <span className="cf-display font-bold uppercase text-lg tracking-wide">{venue.name}</span>
+          <span className="cf-display font-medium text-lg tracking-wide">{venue.name}</span>
           <span className="cf-mono text-[11px] cf-dim2">{venue.id}</span>
           <ShowcaseNote live={live} />
         </div>
         <div className="grid lg:grid-cols-[1fr_20rem] gap-6">
-          <div className="rounded-2xl overflow-hidden" style={{ boxShadow: "var(--cf-shadow-md)" }}>
+          <div className="rounded-md overflow-hidden" style={{ boxShadow: "var(--cf-shadow-md)" }}>
             <VenueMap venue={venue} people={people} me={null} height={520} onSelectHall={setSel} selectedHall={sel} />
           </div>
           <div className="flex flex-col gap-4">
-            <Spotlight className="cf-bento rounded-2xl p-5">
-              <div className="cf-accent text-[10px] cf-dim2 mb-3">SELECTED ZONE</div>
+            <Spotlight className="cf-bento rounded-md p-5">
+              <div className="cf-accent text-[10px] cf-dim2 mb-3">Selected zone</div>
               {hall ? (
                 <>
-                  <div className="cf-display font-bold uppercase text-lg tracking-wide mb-1">{hall.name}</div>
+                  <div className="cf-display font-medium text-lg tracking-wide mb-1">{hall.name}</div>
                   <div className="cf-mono text-[11px] cf-dim2 mb-4">{hall.type}</div>
                   <div className="h-2 rounded-full cf-panel overflow-hidden mb-2">
                     <div className="h-full rounded-full" style={{ width: `${hall.density * 100}%`, background: densityColor(hall.density) }} />
@@ -3008,7 +2618,7 @@ function PlatformPage({ navigate }) {
                 <p className="text-sm cf-dim leading-relaxed">Tap any zone on the map to inspect its live occupancy and status.</p>
               )}
             </Spotlight>
-            <Spotlight className="cf-bento rounded-2xl p-5 flex-1">
+            <Spotlight className="cf-bento rounded-md p-5 flex-1">
               <div className="cf-accent text-[10px] cf-dim2 mb-3">LIVE COUNTS</div>
               <div className="flex flex-col gap-3">
                 {[["Inside venue", people.length * 20], ["Capacity", venue.capacity], ["Zones flagged", venue.halls.filter((h) => h.density > 0.7).length]].map(([l, v]) => (
@@ -3023,8 +2633,8 @@ function PlatformPage({ navigate }) {
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        <Reveal><SectionHeading eyebrow="LIVE TIMING TOWER" title="Ranked by predicted risk"
+      <section className="max-w-7xl mx-auto px-6 py-28 lg:py-36">
+        <Reveal><SectionHeading index={3} eyebrow="LIVE TIMING TOWER" title="Ranked by predicted risk"
           lede="Position comes from the congestion-propagation model, so a quiet zone about to be hit by an overrunning neighbour climbs the board before it fills." /></Reveal>
         <Reveal delay={100}><TimingTower zones={venue.halls} /></Reveal>
       </section>
@@ -3051,14 +2661,14 @@ function TimingTower({ zones = [] }) {
 
   if (!ranked.length) {
     return (
-      <div className="cf-card rounded-2xl px-6 py-10 text-center">
-        <p className="text-sm cf-dim">No zone data yet — start a session to populate the tower.</p>
+      <div className="cf-card rounded-md px-6 py-10 text-center">
+        <p className="text-sm cf-dim">No zone data yet. Start a session to populate the tower.</p>
       </div>
     );
   }
 
   return (
-    <div className="cf-card rounded-2xl overflow-hidden">
+    <div className="cf-card rounded-md overflow-hidden">
       <div className="hidden sm:grid grid-cols-[3rem_1fr_9rem_7rem_9rem] gap-4 px-6 py-3 border-b cf-hairline cf-accent text-[11px] cf-dim2">
         <span>POS</span><span>ZONE</span><span>OCCUPANCY</span><span>TREND</span><span>AI RISK</span>
       </div>
@@ -3071,7 +2681,7 @@ function TimingTower({ zones = [] }) {
           <div key={z.id} className="grid grid-cols-[2.5rem_1fr] sm:grid-cols-[3rem_1fr_9rem_7rem_9rem] gap-4 items-center px-6 py-4 border-b cf-hairline last:border-b-0 hover:bg-white/[0.02] transition-colors">
             <div className="cf-mono font-bold cf-dim2">P{i + 1}</div>
             <div className="flex items-center gap-3 min-w-0">
-              <span className="w-9 h-9 rounded-lg cf-chip flex items-center justify-center shrink-0"><Icon className="w-4 h-4" /></span>
+              <span className="w-9 h-9 rounded cf-chip flex items-center justify-center shrink-0"><Icon className="w-4 h-4" /></span>
               <div className="min-w-0">
                 <div className="font-semibold text-sm truncate">{z.name}</div>
                 <div className="flex items-center gap-1.5 mt-0.5">
@@ -3111,49 +2721,53 @@ function IntelligencePage() {
   ];
   return (
     <div className="cf-page-in">
-      <PageHeader eyebrow="INTELLIGENCE" title="Two calls a threshold can't make"
+      <PageHeader title="Two calls a threshold can't make"
         lede="Simulation and routing are classic algorithms on purpose. The models earn their place doing what per-node rules can't: seeing a neighbour push crowd into you, and turning a density vector into an instruction." />
-      <section className="max-w-7xl mx-auto px-6 py-20 border-b cf-hairline">
+
+      <PhotoBand graded src="/bento/evidence.webp"
+        alt="A full arena bowl seen from the stands"
+        caption="The call a per-zone threshold cannot make." />
+      <section className="max-w-7xl mx-auto px-6 py-28 lg:py-36 border-b cf-hairline">
         <div className="grid md:grid-cols-2 gap-6">
           {[
             { Icon: Zap, t: "Congestion-Propagation GNN", m: "Graph neural net · message passing", b: "Predicts risk at neighbouring zones a few ticks ahead, not just the one crossing a threshold now.", ql: "PREDICTED · HORIZON 30 TICKS", q: "Gate A push spreading to North Concourse. Risk climbing, three ticks out." },
             { Icon: Radio, t: "Advisory Generator", m: "Text generation · density + trend → instruction", b: "Operators read sentences, not density vectors. This turns raw numbers into the line a marshal can act on.", ql: "GENERATED ADVISORY · GATE A", q: "Hold intake and stage arrivals away from Gate A; it is filling faster than it drains." },
           ].map(({ Icon, t, m, b, ql, q }, i) => (
             <Reveal key={t} delay={i * 80}>
-              <Spotlight color="var(--cf-blue-hi)" className="cf-bento rounded-2xl p-7 h-full flex flex-col">
+              <Spotlight color="var(--cf-blue-hi)" className="cf-bento rounded-md p-7 h-full flex flex-col">
                 <div className="flex items-center gap-3 mb-5">
-                  <span className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "rgba(77,141,240,0.14)" }}>
+                  <span className="w-10 h-10 rounded flex items-center justify-center" style={{ background: "rgba(77,141,240,0.14)" }}>
                     <Icon className="w-5 h-5 cf-blue-hi" strokeWidth={2} />
                   </span>
                   <div>
-                    <div className="cf-display font-bold uppercase text-sm tracking-wide">{t}</div>
+                    <div className="cf-display font-semibold text-sm tracking-wide">{t}</div>
                     <div className="cf-mono text-[11px] cf-dim2">{m}</div>
                   </div>
                 </div>
                 <p className="cf-dim text-sm leading-relaxed mb-6">{b}</p>
-                <div className="mt-auto border-l-2 pl-4 py-1" style={{ borderColor: "var(--cf-orange)" }}>
+                <div className="mt-auto border-l-2 pl-4 py-1" style={{ borderColor: "var(--cf-metal)" }}>
                   <div className="cf-mono text-[10px] tracking-widest cf-dim2 mb-1">{ql}</div>
-                  <p className="text-sm italic leading-relaxed">&ldquo;{q}&rdquo;</p>
+                  <p className="cf-hand text-base leading-relaxed">&ldquo;{q}&rdquo;</p>
                 </div>
               </Spotlight>
             </Reveal>
           ))}
         </div>
       </section>
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        <Reveal><SectionHeading eyebrow="THE /ANALYZE PIPELINE" title="Six steps between a graph and a sentence" lede="One endpoint does the whole job. Spring sends board state; FastAPI returns risk scores and the line to read out." /></Reveal>
+      <section className="max-w-7xl mx-auto px-6 py-28 lg:py-36">
+        <Reveal><SectionHeading index={4} eyebrow="THE /ANALYZE PIPELINE" title="Six steps between a graph and a sentence" lede="One endpoint does the whole job. Spring sends board state; FastAPI returns risk scores and the line to read out." /></Reveal>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {pipeline.map(({ Icon, t, d }, i) => (
             <Reveal key={t} delay={i * 60}>
               {/* The step number is drawn oversized and low-contrast behind the content so the
                   sequence is readable at a glance without a numeral competing with the title. */}
-              <Spotlight className="cf-bento rounded-xl p-6 h-full relative overflow-hidden">
-                <span aria-hidden="true" className="cf-display font-black absolute -top-3 right-2 leading-none select-none"
+              <Spotlight className="cf-bento rounded p-6 h-full relative overflow-hidden">
+                <span aria-hidden="true" className="cf-display font-semibold absolute -top-3 right-2 leading-none select-none"
                   style={{ fontSize: "5rem", color: "var(--cf-line)", opacity: 0.55 }}>
                   {i + 1}
                 </span>
-                <Icon className="w-4 h-4 cf-orange mb-4" strokeWidth={2} />
-                <div className="cf-display font-bold uppercase text-sm tracking-wide mb-1.5">{t}</div>
+                <Icon className="w-4 h-4 mb-4" style={{ color: "var(--cf-metal)" }} strokeWidth={2} />
+                <div className="cf-display font-semibold text-sm tracking-wide mb-1.5">{t}</div>
                 <p className="text-sm cf-dim leading-relaxed">{d}</p>
               </Spotlight>
             </Reveal>
@@ -3186,7 +2800,7 @@ function ResultsPage() {
   }, [target?.sessionId, target?.tick]);
 
   const faqs = [
-    { q: "Why did the bottleneck count go up?", a: "Because the crowd got spread across more zones instead of crushed into fewer. Counting zones rewards concentration, which is the wrong incentive. Critical node-ticks — total time any zone spent above the danger line — tracks real risk." },
+    { q: "Why did the bottleneck count go up?", a: "Because the crowd got spread across more zones instead of crushed into fewer. Counting zones rewards concentration, which is the wrong incentive. Critical node-ticks, the total time any zone spent above the danger line, tracks real risk." },
     { q: "Is the baseline a real run or an estimate?", a: "A real run. A hidden baseline session executes in lockstep with the same venue graph, crowd size and random seed, with rerouting off. Only the intervention differs." },
     { q: "What is a node-tick?", a: "One zone spending one tick above the critical threshold. It measures exposure, not incidents." },
   ];
@@ -3200,11 +2814,15 @@ function ResultsPage() {
 
   return (
     <div className="cf-page-in">
-      <PageHeader eyebrow="RESULTS" title="Same crowd, two laps"
+      <PageHeader title="Same crowd, two laps"
         lede="A hidden baseline runs in lockstep with rerouting switched off, on the same venue, crowd and seed. Paired simulation output, not an estimate." />
-      <section className="max-w-7xl mx-auto px-6 py-20 border-b cf-hairline">
+
+      <PhotoBand graded src="/bento/access.webp"
+        alt="A station concourse under exit signage"
+        caption="The same crowd, twice, with one thing changed." />
+      <section className="max-w-7xl mx-auto px-6 py-28 lg:py-36 border-b cf-hairline">
         {!summary && (
-          <div className="cf-card rounded-2xl px-6 py-14 text-center">
+          <div className="cf-card rounded-md px-6 py-14 text-center">
             <p className="text-sm cf-dim">
               No completed run to report on yet. Start a session with rerouting on from the
               client portal, and its before/after lands here.
@@ -3215,14 +2833,14 @@ function ResultsPage() {
         {summary && (
           <>
             <div className="flex flex-wrap items-baseline gap-3 mb-6">
-              <span className="cf-display font-bold uppercase text-lg tracking-wide">{summary.venueName}</span>
+              <span className="cf-display font-medium text-lg tracking-wide">{summary.venueName}</span>
               <span className="cf-mono text-[11px] cf-dim2">
                 {summary.sessionId} · {summary.ticks} ticks · {summary.status}
               </span>
             </div>
             {!summary.comparisonAvailable && (
               <p className="text-sm cf-dim mb-6">
-                This run had rerouting off, so both columns are the same numbers — there was no
+                This run had rerouting off, so both columns are the same numbers, because there was no
                 intervention to compare against.
               </p>
             )}
@@ -3232,10 +2850,10 @@ function ResultsPage() {
         <div className="grid md:grid-cols-2 gap-6">
           {laps.map(({ l, c, d }, i) => (
             <Reveal key={l} delay={i * 80}>
-              <Spotlight color={c} className="cf-bento rounded-2xl p-7 h-full">
+              <Spotlight color={c} className="cf-bento rounded-md p-7 h-full">
                 <div className="flex items-center gap-2.5 mb-6">
                   <span className="w-2 h-2 rounded-full shrink-0" style={{ background: c }} />
-                  <div className="cf-display font-bold uppercase text-sm tracking-wide" style={{ color: c }}>{l}</div>
+                  <div className="cf-display font-semibold text-sm tracking-wide" style={{ color: c }}>{l}</div>
                 </div>
                 <div className="cf-accent text-[11px] cf-dim2 mb-1">CRITICAL NODE-TICKS</div>
                 <div className="cf-mono text-4xl font-bold cf-tnum" style={{ color: c }}>{d.criticalNodeTicks}</div>
@@ -3253,21 +2871,21 @@ function ResultsPage() {
           <p className="text-sm cf-dim leading-relaxed max-w-3xl mt-8">{summary.narrative}</p>
         )}
       </section>
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        <Reveal><SectionHeading eyebrow="READING THE NUMBERS" title="The questions that come up first" lede="Mostly about why one metric moved the wrong way — which turns out to be the interesting part." /></Reveal>
+      <section className="max-w-7xl mx-auto px-6 py-28 lg:py-36">
+        <Reveal><SectionHeading index={5} eyebrow="READING THE NUMBERS" title="The questions that come up first" lede="Mostly about why one metric moved the wrong way, which turns out to be the interesting part." /></Reveal>
         <div className="max-w-3xl">
           {faqs.map((f, i) => (
             <Reveal key={f.q} delay={i * 60}>
               <div className="border-b cf-hairline group">
                 <button onClick={() => setOpen(open === i ? -1 : i)} aria-expanded={open === i}
                   className="cf-focus w-full flex items-center justify-between gap-6 py-5 text-left">
-                  <span className="cf-display font-bold uppercase text-base tracking-wide transition-colors duration-300"
-                    style={{ color: open === i ? "var(--cf-orange)" : undefined }}>{f.q}</span>
+                  <span className="cf-display font-medium text-base tracking-wide transition-colors duration-300"
+                    style={{ color: open === i ? "var(--cf-metal-hi)" : undefined }}>{f.q}</span>
                   <span className="w-7 h-7 rounded-full cf-chip flex items-center justify-center shrink-0 transition-colors duration-300">
                     <ChevronDown className="w-4 h-4 cf-dim transition-transform duration-300" style={{ transform: open === i ? "rotate(180deg)" : "none" }} />
                   </span>
                 </button>
-                <div style={{ display: "grid", gridTemplateRows: open === i ? "1fr" : "0fr", transition: "grid-template-rows .35s cubic-bezier(0.16,1,0.3,1)" }}>
+                <div style={{ display: "grid", gridTemplateRows: open === i ? "1fr" : "0fr", transition: "grid-template-rows var(--cf-t-state) cubic-bezier(0.16,1,0.3,1)" }}>
                   <div style={{ overflow: "hidden" }}><p className="text-sm cf-dim leading-relaxed pb-5 max-w-2xl">{f.a}</p></div>
                 </div>
               </div>
@@ -3350,7 +2968,7 @@ function Avatar({ session, size = 36, className = "", ring = true }) {
   const hue = avatarHue(session?.id ?? session?.email);
   const style = {
     width: size, height: size,
-    boxShadow: ring ? "inset 0 0 0 1px rgba(255,255,255,0.14)" : "none",
+    boxShadow: ring ? "inset 0 0 0 1px rgba(33,30,26,0.12)" : "none",
   };
   if (session?.avatar) {
     return (
@@ -3360,7 +2978,7 @@ function Avatar({ session, size = 36, className = "", ring = true }) {
   }
   return (
     <span aria-hidden="true"
-      className={`rounded-full shrink-0 flex items-center justify-center cf-display font-black ${className}`}
+      className={`rounded-full shrink-0 flex items-center justify-center cf-display font-semibold ${className}`}
       style={{
         ...style,
         fontSize: Math.max(10, Math.round(size * 0.38)),
@@ -3375,23 +2993,23 @@ function Avatar({ session, size = 36, className = "", ring = true }) {
 
 const ROLES = {
   walker: {
-    key: "walker", label: "Walker", who: "Attendees & visitors", color: "var(--cf-blue-hi)", Icon: Ticket,
+    key: "walker", label: "Walker", who: "Attendees & visitors", color: "var(--cf-fuchsia-text)", Icon: Ticket,
     tagline: "Find yourself. Find the way out.",
-    blurb: "Type the venue code from the signage at your entrance and the map loads with you on it. Routes are coloured by how crowded they actually are right now — blue is clear, red is a crush — and the way out you're shown goes around the jam, not through it.",
+    blurb: "Type the venue code from the signage at your entrance and the map loads with you on it. Routes are coloured by how crowded they actually are right now (blue is clear, red is a crush) and the way out you're shown goes around the jam, not through it.",
     can: ["A live map of the venue you checked into", "A route out that avoids the crowds", "Colour-coded congestion on every path", "Water points, restrooms, concessions"],
     cannot: ["Other attendees' identities or positions", "Venue analytics or capacity figures", "Anything outside the venue geofence"],
   },
   client: {
-    key: "client", label: "Client", who: "Venue owners & organisers", color: "var(--cf-orange)", Icon: Building2,
+    key: "client", label: "Client", who: "Venue owners & organisers", color: "var(--cf-iris-text)", Icon: Building2,
     tagline: "Upload a floor plan. Get a live map.",
-    blurb: "Drop in a flat 2D image of your venue and AI traces it into a working map — halls, corridors, gates, and the pathways between them. Set a venue code for your signage, then it's live: occupancy per zone, and warnings the moment an area starts becoming dangerous.",
+    blurb: "Drop in a flat 2D image of your venue and AI traces it into a working map: halls, corridors, gates, and the pathways between them. Set a venue code for your signage, then it's live: occupancy per zone, and warnings the moment an area starts becoming dangerous.",
     can: ["AI tracing of 2D floor plans into pathways", "A venue code attendees check in with", "Live occupancy and crowd-safety warnings", "Reroute advisories as zones fill"],
     cannot: ["Individual attendee identities", "Other clients' venues or data", "Platform-wide analytics"],
   },
   admin: {
-    key: "admin", label: "Admin", who: "Platform operations", color: "var(--cf-red-text)", Icon: UserCog,
+    key: "admin", label: "Admin", who: "Platform operations", color: "var(--cf-cyan-text)", Icon: UserCog,
     tagline: "Every venue. Every bottleneck.",
-    blurb: "The operations console. Cross-venue monitoring, layout review, incident history, and the model's own accuracy over time — where predicted risk did and didn't match what happened.",
+    blurb: "The operations console. Cross-venue monitoring, layout review, incident history, and the model's own accuracy over time, showing where predicted risk did and didn't match what happened.",
     can: ["All venues and layouts", "Cross-venue bottleneck monitoring", "Client account management", "Model accuracy and incident review"],
     cannot: ["Attendee personal data beyond anonymised position", "Anything without an audit-log entry"],
   },
@@ -3414,27 +3032,41 @@ const ROLES = {
 function AccessPage({ navigate }) {
   // Client is featured: it is the only role that can create a session, so it is the one a
   // first-time visitor almost always wants.
-  const plans = Object.values(ROLES).map((r) => ({ ...r, featured: r.key === "client" }));
+  const plans = Object.values(ROLES).map((r) => ({
+    ...r,
+    featured: r.key === "client",
+    art: { walker: "/bento/walker.webp", client: "/bento/client.webp", admin: "/bento/admin.webp" }[r.key],
+  }));
 
   return (
     <div className="cf-page-in">
       <PageHeader eyebrow="PORTALS" title="Pick your way in"
-        lede="One platform, three portals. Each sees exactly what its job requires and nothing beyond it — the boundaries below are the actual access model, not a marketing summary." />
+        lede="One platform, three portals. Each sees exactly what its job requires and nothing beyond it. The boundaries below are the actual access model, not a marketing summary." />
 
-      <section className="max-w-6xl mx-auto px-6 py-16">
+      <section className="max-w-6xl mx-auto px-6 py-24 lg:py-28">
         <div className="grid grid-cols-1 min-[900px]:grid-cols-3 gap-6 items-stretch">
           {plans.map((plan, i) => (
             <Reveal key={plan.key} delay={i * 90} className="h-full">
               <Spotlight
                 color={plan.color}
                 aria-label={`${plan.label} portal`}
-                className={`cf-bento group rounded-2xl p-6 h-full flex flex-col text-left ${plan.featured ? "min-[900px]:-translate-y-2" : ""}`}
+                className={`cf-bento group rounded-xl overflow-hidden h-full flex flex-col text-left ${plan.featured ? "min-[900px]:-translate-y-2" : ""}`}
                 style={plan.featured
                   ? { borderColor: plan.color, boxShadow: `0 0 0 1px color-mix(in oklab, ${plan.color} 22%, transparent), var(--cf-shadow-lg)` }
                   : undefined}>
 
+                {/* The role's own arc, fading into the card so the badge below sits on
+                    the artwork rather than beneath a hard edge. */}
+                <div className="relative h-32 shrink-0 overflow-hidden" aria-hidden="true">
+                  <img src={plan.art} alt="" loading="lazy" decoding="async"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    style={{ transitionTimingFunction: "var(--cf-ease)" }} />
+                  <div className="absolute inset-0"
+                    style={{ background: "linear-gradient(to top, var(--cf-card) 12%, transparent)" }} />
+                </div>
+
                 {/* Header block — badge, then the tagline in the slot a price would occupy. */}
-                <div className="text-center">
+                <div className="text-center px-6 -mt-8 relative z-10">
                   <div className="inline-flex items-center gap-2 flex-wrap justify-center">
                     <span className="cf-accent text-[10px] rounded-full px-2.5 py-1"
                       style={plan.featured
@@ -3443,7 +3075,7 @@ function AccessPage({ navigate }) {
                         // accent chip wants anyway. Holds while the featured plan is the
                         // orange one; a dark accent would need the inverse.
                         ? { background: plan.color, color: "var(--cf-bg)" }
-                        : { background: "rgba(255,255,255,0.06)", color: "var(--cf-dim)", border: "1px solid var(--cf-line)" }}>
+                        : { background: "rgba(33,30,26,0.05)", color: "var(--cf-dim)", border: "1px solid var(--cf-line)" }}>
                       {plan.label.toUpperCase()}
                     </span>
                     {plan.featured && (
@@ -3454,7 +3086,7 @@ function AccessPage({ navigate }) {
                     )}
                   </div>
 
-                  <span className="mt-5 mb-4 w-12 h-12 rounded-xl mx-auto flex items-center justify-center transition-transform duration-500 group-hover:scale-110"
+                  <span className="mt-5 mb-4 w-12 h-12 rounded mx-auto flex items-center justify-center transition-transform duration-500 group-hover:scale-110"
                     style={{ background: `color-mix(in oklab, ${plan.color} 18%, transparent)`, transitionTimingFunction: "var(--cf-ease)" }}>
                     <plan.Icon className="w-6 h-6" style={{ color: plan.color }} strokeWidth={2} />
                   </span>
@@ -3463,16 +3095,19 @@ function AccessPage({ navigate }) {
                       leads and the price sits under it as the accent. Reversing that put a
                       long coloured tagline above the name and the card stopped announcing
                       which portal it was. */}
-                  <h3 className="cf-display font-black uppercase text-2xl tracking-tight leading-none mb-2">
+                  <h3 className="cf-display font-semibold text-2xl tracking-tight leading-none mb-2">
                     {plan.label}
                   </h3>
-                  <p className="cf-display font-bold uppercase text-sm tracking-wide leading-snug mb-2"
+                  <p className="cf-display font-semibold text-sm tracking-wide leading-snug mb-2"
                     style={{ color: plan.color }}>
                     {plan.tagline}
                   </p>
                   <p className="cf-accent text-[10px] cf-dim2">{plan.who.toUpperCase()}</p>
                 </div>
 
+                {/* Body padding lives here now: the card itself is flush so the art can
+                    reach its edges. */}
+                <div className="px-6 pb-6 flex flex-col flex-1">
                 <div className="my-5 border-t cf-hairline" />
 
                 <p className="text-sm cf-dim leading-relaxed mb-5">{plan.blurb}</p>
@@ -3500,12 +3135,13 @@ function AccessPage({ navigate }) {
                 {/* mt-auto keeps every CTA on the same baseline however long the lists run. */}
                 <div className="mt-auto pt-6">
                   <button onClick={() => navigate(`/login/${plan.key}`)}
-                    className="cf-focus cf-shine rounded-xl px-5 py-3 cf-display font-bold uppercase text-sm tracking-wide w-full transition-all"
+                    className="cf-focus rounded px-5 py-3 cf-display font-semibold text-sm tracking-wide w-full transition-all"
                     style={plan.featured
                       ? { background: `linear-gradient(100deg, ${plan.color}, color-mix(in oklab, ${plan.color} 62%, var(--cf-orange)))`, color: "#fff" }
                       : { background: `color-mix(in oklab, ${plan.color} 14%, transparent)`, border: `1px solid ${plan.color}`, color: plan.color }}>
                     Sign in as {plan.label}
                   </button>
+                </div>
                 </div>
               </Spotlight>
             </Reveal>
@@ -3515,13 +3151,13 @@ function AccessPage({ navigate }) {
 
       <section className="max-w-6xl mx-auto px-6 pb-24">
         <Reveal>
-          <div className="cf-card rounded-2xl p-7 flex items-start gap-4">
+          <div className="cf-card rounded-md p-7 flex items-start gap-4">
             <ShieldCheck className="w-5 h-5 cf-green shrink-0 mt-0.5" strokeWidth={2} />
             <div>
-              <div className="cf-display font-bold uppercase text-base tracking-wide mb-2">Position data never leaves the geofence</div>
+              <div className="cf-display font-medium text-base tracking-wide mb-2">Position data never leaves the geofence</div>
               <p className="text-sm cf-dim leading-relaxed max-w-3xl">
                 A device only contributes a dot while it is inside the venue polygon. Step outside and the point stops
-                being rendered and stops being counted — there is no tracking of where anyone goes before or after.
+                being rendered and stops being counted. There is no tracking of where anyone goes before or after.
                 Walkers see only themselves; organisers and admins see anonymous density, never identities.
               </p>
             </div>
@@ -3543,10 +3179,8 @@ function AccessPage({ navigate }) {
  * background, with the form entering in staged steps and a confirmation beat before the
  * redirect rather than an instant jump.
  *
- * The original drives its background with Three.js + React Three Fiber — about 25MB of
- * dependency for one screen's backdrop. This app already ships a WebGL shader engine
- * (@paper-design/shaders-react, ~430KB) doing exactly that job site-wide, so the backdrop
- * here is the existing <MeshField>, intensified locally. Same effect, no second WebGL stack.
+ * The backdrop is deliberately still. An animated field behind a sign-in form competes
+ * with the one thing on screen the user came to do.
  */
 /**
  * The password rules, shown while they are being met rather than after they are broken.
@@ -3571,11 +3205,11 @@ function PasswordRequirements({ password, accent, show }) {
       <div className="flex flex-wrap gap-x-4 gap-y-1.5 justify-center mb-3">
         {checks.map((c) => (
           <span key={c.id} className="flex items-center gap-1.5 text-[11px] transition-colors"
-            style={{ color: c.met ? "var(--cf-green, #4ade80)" : "var(--cf-dim2)" }}>
+            style={{ color: c.met ? "var(--cf-lime)" : "var(--cf-dim2)" }}>
             <span aria-hidden="true"
               className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 transition-all"
               style={c.met
-                ? { background: "color-mix(in oklab, var(--cf-green, #4ade80) 22%, transparent)" }
+                ? { background: "color-mix(in oklab, var(--cf-lime) 22%, transparent)" }
                 : { border: "1px solid var(--cf-line2)" }}>
               {c.met && <Check className="w-2.5 h-2.5" strokeWidth={3.5} />}
             </span>
@@ -3589,7 +3223,7 @@ function PasswordRequirements({ password, accent, show }) {
           <span key={i} className="h-0.5 flex-1 rounded-full transition-all duration-300"
             style={{
               background: i <= strength.score
-                ? (strength.score >= 3 ? "var(--cf-green, #4ade80)" : accent)
+                ? (strength.score >= 3 ? "var(--cf-lime)" : accent)
                 : "var(--cf-line)",
             }} />
         ))}
@@ -3646,8 +3280,6 @@ function LoginPage({ roleKey, navigate, signIn }) {
   // The two dot-matrix layers. The forward reveal runs from mount; when the code completes
   // the reverse layer is switched on first and the forward one removed a frame later, so the
   // grid appears to collapse back out rather than cutting to a second animation.
-  const [forwardCanvas, setForwardCanvas] = useState(true);
-  const [reverseCanvas, setReverseCanvas] = useState(false);
 
   // Every timeout is tracked so an unmount mid-flow cannot land setState on a dead component
   // or fire a navigate after the user has already left the page.
@@ -3673,7 +3305,7 @@ function LoginPage({ roleKey, navigate, signIn }) {
 
   /** Turns any failure from the auth endpoints into one line a person can act on. */
   const explain = (e, fallback) => (
-    e?.status === 409 ? "That email is already registered — switch to Sign in."
+    e?.status === 409 ? "That email is already registered. Switch to Sign in."
       : e?.status === 401 ? "Email or password is incorrect."
         // 403 is the admin gate and the disabled-account case. Both carry a message written
         // for a reader, so pass it through rather than replacing it with a generic one.
@@ -3699,9 +3331,6 @@ function LoginPage({ roleKey, navigate, signIn }) {
     // whichever entrance they came through.
     const actualRole = (res.user?.role ?? role.key).toLowerCase();
 
-    setReverseCanvas(true);
-    timers.current.push(setTimeout(() => setForwardCanvas(false), 60));
-    timers.current.push(setTimeout(() => setReverseCanvas(false), reduced ? 150 : 1150));
     timers.current.push(setTimeout(() => setStep("success"), reduced ? 200 : 1200));
     timers.current.push(setTimeout(() => {
       signIn(res.user ? { ...toSession(res.user), role: actualRole }
@@ -3790,8 +3419,6 @@ function LoginPage({ roleKey, navigate, signIn }) {
     setResetCode("");
     setIssuedCode("");
     setErr("");
-    setReverseCanvas(false);
-    setForwardCanvas(true);
   };
 
   // Staged entrance, done in CSS rather than through Motion.
@@ -3820,31 +3447,18 @@ function LoginPage({ roleKey, navigate, signIn }) {
 
   // The dot grid is drawn in the role's own colour rather than the source's white, so each
   // portal's sign-in is identifiable before a word is read.
-  const dotRGB = useMemo(() => ({
-    walker: [77, 141, 240], client: [255, 106, 0], admin: [225, 6, 0],
-  }[role.key] ?? [255, 106, 0]), [role.key]);
-
   return (
     <div className="cf-page-in min-h-screen flex flex-col items-center justify-center px-6 py-28 relative">
-      {/* The reveal. Mounted behind everything and masked to a vignette so the dots read as
-          depth at the edges and never compete with the form in the middle. */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden="true">
-        {forwardCanvas && (
-          <CanvasRevealEffect colors={[dotRGB, [255, 255, 255]]} dotSize={6} speed={3} />
-        )}
-        {reverseCanvas && (
-          <CanvasRevealEffect colors={[dotRGB, [255, 255, 255]]} dotSize={6} speed={4} reverse />
-        )}
-        <div className="absolute inset-0"
-          style={{ background: "radial-gradient(circle at center, rgba(5,7,11,.92) 0%, rgba(5,7,11,.55) 45%, rgba(5,7,11,.92) 100%)" }} />
-      </div>
+      {/* A single soft pool of light behind the form, and nothing moving. */}
+      <div className="fixed inset-0 z-0 pointer-events-none" aria-hidden="true"
+        style={{ background: "radial-gradient(70% 50% at 50% 38%, rgba(201,205,212,0.05), transparent 70%)" }} />
 
       <div className="w-full max-w-md relative z-10">
         <AnimatePresence mode="wait">
           {step === "email" && (
             <motion.div key="email" {...slide(-1)} className="text-center">
               <div {...stage(0)} className="flex justify-center mb-6">
-                <span className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                <span className="w-14 h-14 rounded-md flex items-center justify-center"
                   style={{ background: `color-mix(in oklab, ${role.color} 18%, transparent)` }}>
                   <role.Icon className="w-7 h-7" style={{ color: role.color }} strokeWidth={2} />
                 </span>
@@ -3852,9 +3466,9 @@ function LoginPage({ roleKey, navigate, signIn }) {
 
               <div {...stage(1)}>
                 <div className="cf-accent text-[10px] cf-dim2 mb-2">{role.who.toUpperCase()}</div>
-                <h1 className="cf-display font-black uppercase tracking-tight leading-none mb-3"
+                <h1 className="cf-display font-semibold tracking-tight leading-none mb-3"
                   style={{ fontSize: "clamp(2rem, 5vw, 2.75rem)" }}>
-                  <GradientShimmer gradient="ember">{`${role.label} portal`}</GradientShimmer>
+                  {`${role.label} portal`}
                 </h1>
                 <p className="text-base cf-dim font-light mb-6">{role.tagline}</p>
               </div>
@@ -3868,11 +3482,11 @@ function LoginPage({ roleKey, navigate, signIn }) {
                   whose only outcome is a 403 wastes a password on a door that was never open. */}
               {allowsSignUp && (
                 <div {...stage(2)} className="flex gap-1 p-1 rounded-full mb-4 mx-auto max-w-xs"
-                  style={{ background: "rgba(5,7,11,0.55)", border: "1px solid var(--cf-line)", backdropFilter: "blur(4px)" }}>
+                  style={{ background: "var(--cf-card)", border: "1px solid var(--cf-line)", backdropFilter: "blur(4px)" }}>
                   {[["Sign in", false], ["Create account", true]].map(([label, wantsNew]) => (
                     <button key={label} type="button" aria-pressed={isNewAccount === wantsNew}
                       onClick={() => { setWantsNewAccount(wantsNew); setErr(""); }}
-                      className="cf-focus flex-1 rounded-full py-2 cf-display font-bold uppercase text-[11px] tracking-wide transition-all"
+                      className="cf-focus flex-1 rounded-full py-2 cf-display font-medium uppercase text-[11px] tracking-wide transition-all"
                       style={isNewAccount === wantsNew
                         ? { background: `color-mix(in oklab, ${role.color} 26%, transparent)`, color: "var(--cf-ink)", boxShadow: "inset 0 1px 0 rgba(255,246,240,.09)" }
                         : { background: "transparent", color: "var(--cf-dim2)" }}>
@@ -3884,7 +3498,7 @@ function LoginPage({ roleKey, navigate, signIn }) {
 
               {!allowsSignUp && (
                 <p {...stage(2)} className="cf-accent text-[10px] cf-dim2 mb-4">
-                  SIGN IN ONLY — ACCESS IS GRANTED BY THE PLATFORM TEAM
+                  SIGN IN ONLY · ACCESS IS GRANTED BY THE PLATFORM TEAM
                 </p>
               )}
 
@@ -3899,7 +3513,7 @@ function LoginPage({ roleKey, navigate, signIn }) {
                     placeholder={`you@${role.key === "walker" ? "example.com" : role.key === "client" ? "yourvenue.com" : "concourse.io"}`}
                     aria-label="Email address"
                     className="cf-focus w-full rounded-full py-3.5 pl-5 pr-14 text-sm text-center transition-colors"
-                    style={{ background: "rgba(5,7,11,0.55)", border: "1px solid var(--cf-line2)", color: "var(--cf-ink)", backdropFilter: "blur(4px)" }} />
+                    style={{ background: "var(--cf-card)", border: "1px solid var(--cf-line2)", color: "var(--cf-ink)", backdropFilter: "blur(4px)" }} />
                   <button type="submit" aria-label="Continue"
                     className="cf-focus absolute right-2 top-2 w-9 h-9 flex items-center justify-center rounded-full transition-colors"
                     style={{ background: `color-mix(in oklab, ${role.color} 26%, transparent)`, color: "var(--cf-ink)" }}>
@@ -3919,7 +3533,7 @@ function LoginPage({ roleKey, navigate, signIn }) {
                 {Object.values(ROLES).filter((r) => r.key !== role.key).map((r) => (
                   <button key={r.key} onClick={() => navigate(`/login/${r.key}`)}
                     className="cf-focus cf-chip rounded-full px-4 py-2.5 flex-1 transition-colors hover:border-(--cf-line2)">
-                    <span className="cf-display font-bold uppercase text-xs" style={{ color: r.color }}>{r.label}</span>
+                    <span className="cf-display font-semibold text-xs" style={{ color: r.color }}>{r.label}</span>
                   </button>
                 ))}
               </div>
@@ -3927,8 +3541,8 @@ function LoginPage({ roleKey, navigate, signIn }) {
               <p {...stage(6)} className="text-xs cf-dim2 leading-relaxed mt-10">
                 {/* Says something the notice above it does not, rather than repeating it. */}
                 {allowsSignUp
-                  ? "One account covers both the walker and the client portal — the same credentials open either door, and signing in at one moves you there."
-                  : "If your address has not been granted the console, use the walker or client portal instead — those are self-service and share one account."}
+                  ? "One account covers both the walker and the client portal, so the same credentials open either door, and signing in at one moves you there."
+                  : "If your address has not been granted the console, use the walker or client portal instead. Those are self-service and share one account."}
               </p>
             </motion.div>
           )}
@@ -3936,9 +3550,9 @@ function LoginPage({ roleKey, navigate, signIn }) {
           {step === "code" && (
             <motion.div key="code" {...slide(1)} className="text-center">
               <div {...stage(0)}>
-                <h1 className="cf-display font-black uppercase tracking-tight leading-none mb-3"
+                <h1 className="cf-display font-semibold tracking-tight leading-none mb-3"
                   style={{ fontSize: "clamp(1.9rem, 4.5vw, 2.5rem)" }}>
-                  <GradientShimmer gradient="ember">{isNewAccount ? "Choose a password" : "Enter your password"}</GradientShimmer>
+                  {isNewAccount ? "Choose a password" : "Enter your password"}
                 </h1>
                 <p className="text-sm cf-dim font-light mb-1">
                   {isNewAccount
@@ -3962,7 +3576,7 @@ function LoginPage({ roleKey, navigate, signIn }) {
                   autoComplete={isNewAccount ? "new-password" : "current-password"}
                   aria-label="Password"
                   className="cf-focus w-full rounded-full py-3.5 pl-12 pr-5 text-sm text-center transition-colors"
-                  style={{ background: "rgba(5,7,11,0.55)", border: "1px solid var(--cf-line2)", color: "var(--cf-ink)", backdropFilter: "blur(4px)" }} />
+                  style={{ background: "var(--cf-card)", border: "1px solid var(--cf-line2)", color: "var(--cf-ink)", backdropFilter: "blur(4px)" }} />
               </div>
 
               <PasswordRequirements password={password} accent={role.color} show={isNewAccount} />
@@ -3971,15 +3585,15 @@ function LoginPage({ roleKey, navigate, signIn }) {
 
               <div {...stage(2)} className="flex gap-3">
                 <button onClick={backToEmail} disabled={busy}
-                  className="cf-focus cf-btn-outline rounded-full px-6 py-3 cf-display font-bold uppercase text-xs tracking-wide disabled:opacity-50">
+                  className="cf-focus cf-btn-outline rounded-full px-6 py-3 cf-display font-semibold text-xs tracking-wide disabled:opacity-50">
                   Back
                 </button>
                 <button onClick={() => finish()}
                   disabled={!canSubmitPassword || busy}
-                  className="cf-focus flex-1 rounded-full py-3 cf-display font-bold uppercase text-xs tracking-wide transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="cf-focus flex-1 rounded-full py-3 cf-display font-semibold text-xs tracking-wide transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   style={canSubmitPassword && !busy
                     ? { background: `linear-gradient(100deg, ${role.color}, color-mix(in oklab, ${role.color} 62%, var(--cf-orange)))`, color: "#fff" }
-                    : { background: "rgba(255,255,255,0.04)", color: "var(--cf-dim2)", border: "1px solid var(--cf-line)" }}>
+                    : { background: "rgba(33,30,26,0.04)", color: "var(--cf-dim2)", border: "1px solid var(--cf-line)" }}>
                   {busy && <span className="w-3.5 h-3.5 rounded-full border-2 border-white/35 border-t-white animate-spin" aria-hidden="true" />}
                   {busy ? "Checking…" : isNewAccount ? "Create account" : "Sign in"}
                 </button>
@@ -3999,9 +3613,9 @@ function LoginPage({ roleKey, navigate, signIn }) {
           {step === "reset" && (
             <motion.div key="reset" {...slide(1)} className="text-center">
               <div {...stage(0)}>
-                <h1 className="cf-display font-black uppercase tracking-tight leading-none mb-3"
+                <h1 className="cf-display font-semibold tracking-tight leading-none mb-3"
                   style={{ fontSize: "clamp(1.9rem, 4.5vw, 2.5rem)" }}>
-                  <GradientShimmer gradient="ember">Reset your password</GradientShimmer>
+                  Reset your password
                 </h1>
                 <p className="text-sm cf-dim font-light mb-1">
                   Enter the code, then choose a new password.
@@ -4015,9 +3629,9 @@ function LoginPage({ roleKey, navigate, signIn }) {
                   yet" covers both no mail account and a missing app password — because this
                   is a user-facing panel, not a configuration report. Once delivery works the
                   backend withholds the code and this branch stops rendering. */}
-              <div {...stage(1)} className="rounded-2xl px-4 py-3 mb-5 text-left cf-bento">
+              <div {...stage(1)} className="rounded-md px-4 py-3 mb-5 text-left cf-bento">
                 <div className="cf-accent text-[10px] cf-dim2 mb-1.5">
-                  {issuedCode ? "EMAIL NOT SET UP YET — CODE SHOWN HERE" : "CHECK YOUR INBOX"}
+                  {issuedCode ? "EMAIL NOT SET UP YET · CODE SHOWN HERE" : "CHECK YOUR INBOX"}
                 </div>
                 <p className="text-xs cf-dim leading-relaxed">
                   {issuedCode
@@ -4039,7 +3653,7 @@ function LoginPage({ roleKey, navigate, signIn }) {
                   maxLength={12}
                   aria-label="Reset code"
                   className="cf-focus cf-mono w-full rounded-full py-3.5 pl-12 pr-5 text-sm text-center uppercase tracking-[0.3em] transition-colors"
-                  style={{ background: "rgba(5,7,11,0.55)", border: "1px solid var(--cf-line2)", color: "var(--cf-ink)", backdropFilter: "blur(4px)" }} />
+                  style={{ background: "var(--cf-card)", border: "1px solid var(--cf-line2)", color: "var(--cf-ink)", backdropFilter: "blur(4px)" }} />
               </div>
 
               <div {...stage(3)} className="relative mb-4">
@@ -4053,7 +3667,7 @@ function LoginPage({ roleKey, navigate, signIn }) {
                   autoComplete="new-password"
                   aria-label="New password"
                   className="cf-focus w-full rounded-full py-3.5 pl-12 pr-5 text-sm text-center transition-colors"
-                  style={{ background: "rgba(5,7,11,0.55)", border: "1px solid var(--cf-line2)", color: "var(--cf-ink)", backdropFilter: "blur(4px)" }} />
+                  style={{ background: "var(--cf-card)", border: "1px solid var(--cf-line2)", color: "var(--cf-ink)", backdropFilter: "blur(4px)" }} />
               </div>
 
               <PasswordRequirements password={password} accent={role.color} show />
@@ -4062,15 +3676,15 @@ function LoginPage({ roleKey, navigate, signIn }) {
 
               <div {...stage(4)} className="flex gap-3">
                 <button onClick={backToEmail} disabled={busy}
-                  className="cf-focus cf-btn-outline rounded-full px-6 py-3 cf-display font-bold uppercase text-xs tracking-wide disabled:opacity-50">
+                  className="cf-focus cf-btn-outline rounded-full px-6 py-3 cf-display font-semibold text-xs tracking-wide disabled:opacity-50">
                   Back
                 </button>
                 <button onClick={() => submitReset()}
                   disabled={!canSubmitReset || busy}
-                  className="cf-focus flex-1 rounded-full py-3 cf-display font-bold uppercase text-xs tracking-wide transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="cf-focus flex-1 rounded-full py-3 cf-display font-semibold text-xs tracking-wide transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   style={canSubmitReset && !busy
                     ? { background: `linear-gradient(100deg, ${role.color}, color-mix(in oklab, ${role.color} 62%, var(--cf-orange)))`, color: "#fff" }
-                    : { background: "rgba(255,255,255,0.04)", color: "var(--cf-dim2)", border: "1px solid var(--cf-line)" }}>
+                    : { background: "rgba(33,30,26,0.04)", color: "var(--cf-dim2)", border: "1px solid var(--cf-line)" }}>
                   {busy && <span className="w-3.5 h-3.5 rounded-full border-2 border-white/35 border-t-white animate-spin" aria-hidden="true" />}
                   {busy ? "Saving…" : "Set new password"}
                 </button>
@@ -4087,9 +3701,9 @@ function LoginPage({ roleKey, navigate, signIn }) {
             <motion.div key="success" className="text-center"
               initial={reduced ? false : { opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}>
-              <h1 className="cf-display font-black uppercase tracking-tight leading-none mb-3"
+              <h1 className="cf-display font-semibold tracking-tight leading-none mb-3"
                 style={{ fontSize: "clamp(2rem, 5vw, 2.75rem)" }}>
-                <GradientShimmer gradient="ember">You&rsquo;re in</GradientShimmer>
+                You&rsquo;re in
               </h1>
               <p className="text-base cf-dim font-light">Opening the {role.label.toLowerCase()} portal…</p>
 
@@ -4098,7 +3712,7 @@ function LoginPage({ roleKey, navigate, signIn }) {
                 transition={{ duration: 0.4, delay: reduced ? 0 : 0.2 }}>
                 <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center"
                   style={{ background: `linear-gradient(140deg, ${role.color}, color-mix(in oklab, ${role.color} 55%, var(--cf-orange)))` }}>
-                  <Check className="w-8 h-8 text-white" strokeWidth={3} />
+                  <Check className="w-8 h-8" style={{ color: "var(--cf-bg)" }} strokeWidth={3} />
                 </div>
               </motion.div>
             </motion.div>
@@ -4135,13 +3749,13 @@ function AlreadySignedIn({ session, wanted, navigate, signOut, sameTier = false 
     <div className="cf-page-in min-h-screen flex items-center px-5 sm:px-6 py-24 sm:py-32" data-portal={session.role}>
       <div className="w-full max-w-lg mx-auto">
         <Reveal>
-          <div className="cf-card rounded-2xl p-6 sm:p-8">
-            <span className="w-12 h-12 rounded-xl flex items-center justify-center mb-6"
+          <div className="cf-card rounded-md p-6 sm:p-8">
+            <span className="w-12 h-12 rounded flex items-center justify-center mb-6"
               style={{ background: `color-mix(in oklab, ${mine.color} 16%, transparent)` }}>
               <mine.Icon className="w-6 h-6" style={{ color: mine.color }} strokeWidth={2} aria-hidden="true" />
             </span>
 
-            <h1 className="cf-display font-black uppercase text-3xl tracking-tight mb-3">
+            <h1 className="cf-display font-semibold text-3xl tracking-tight mb-3">
               You are signed in as {mine.label.toLowerCase()}
             </h1>
             <p className="text-sm cf-dim leading-relaxed mb-2">
@@ -4154,11 +3768,11 @@ function AlreadySignedIn({ session, wanted, navigate, signOut, sameTier = false 
             </p>
 
             <button onClick={() => navigate(`/app/${session.role}`)}
-              className="cf-focus cf-btn-primary rounded-xl px-5 py-4 cf-display font-bold uppercase text-sm tracking-wide w-full">
+              className="cf-focus cf-btn-primary rounded px-5 py-4 cf-display font-semibold text-sm tracking-wide w-full">
               Go to my {mine.label.toLowerCase()} portal
             </button>
             <button onClick={() => { signOut(); navigate(`/login/${wanted}`); }}
-              className="cf-focus cf-btn-outline rounded-xl px-5 py-3.5 cf-accent text-[11px] w-full mt-3">
+              className="cf-focus cf-btn-outline rounded px-5 py-3.5 cf-accent text-[11px] w-full mt-3">
               SIGN OUT AND USE {theirs.label.toUpperCase()}
             </button>
           </div>
@@ -4260,14 +3874,14 @@ function ProfilePanel({ session, onClose, onSaved }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-start sm:items-center justify-center p-4 sm:p-6 overflow-y-auto">
       <button aria-label="Close profile" onClick={onClose}
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
+        className="fixed inset-0 backdrop-blur-sm" style={{ background: "rgba(33,30,26,0.45)" }} />
       <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="cf-profile-title"
-        className="cf-card relative rounded-2xl w-full max-w-lg p-6 sm:p-8 my-auto">
+        className="cf-card relative rounded-md w-full max-w-lg p-6 sm:p-8 my-auto">
         <div className="flex items-start justify-between gap-4 mb-7">
           <div className="flex items-center gap-4 min-w-0">
             <Avatar session={preview} size={56} />
             <div className="min-w-0">
-              <h2 id="cf-profile-title" className="cf-display font-black uppercase text-xl tracking-tight leading-none mb-1.5">
+              <h2 id="cf-profile-title" className="cf-display font-semibold text-xl tracking-tight leading-none mb-1.5">
                 Your profile
               </h2>
               <span className="cf-accent text-[10px] cf-dim2 block">
@@ -4276,14 +3890,14 @@ function ProfilePanel({ session, onClose, onSaved }) {
             </div>
           </div>
           <button onClick={onClose} aria-label="Close"
-            className="cf-focus cf-btn-outline rounded-lg w-9 h-9 flex items-center justify-center shrink-0">
+            className="cf-focus cf-btn-outline rounded w-9 h-9 flex items-center justify-center shrink-0">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <div className="flex items-center gap-3 mb-7">
           <button onClick={() => fileRef.current?.click()}
-            className="cf-focus cf-btn-outline rounded-lg px-3.5 py-2.5 cf-accent text-[10px]">
+            className="cf-focus cf-btn-outline rounded px-3.5 py-2.5 cf-accent text-[10px]">
             {avatar ? "CHANGE PICTURE" : "UPLOAD PICTURE"}
           </button>
           {avatar && (
@@ -4297,7 +3911,7 @@ function ProfilePanel({ session, onClose, onSaved }) {
         <input id="cf-profile-name" value={displayName} maxLength={120}
           onChange={(e) => setDisplayName(e.target.value)}
           placeholder={personName({ email: session.email })}
-          className="cf-input cf-focus w-full rounded-xl px-4 py-3 text-sm mb-5" />
+          className="cf-input cf-focus w-full rounded px-4 py-3 text-sm mb-5" />
 
         <div className="flex items-baseline justify-between mb-2">
           <label htmlFor="cf-profile-bio" className="cf-accent text-[10px] cf-dim2">ABOUT YOU</label>
@@ -4306,7 +3920,7 @@ function ProfilePanel({ session, onClose, onSaved }) {
         <textarea id="cf-profile-bio" value={bio} maxLength={280} rows={3}
           onChange={(e) => setBio(e.target.value)}
           placeholder="Ops lead, north stand. Radio channel 4."
-          className="cf-input cf-focus w-full rounded-xl px-4 py-3 text-sm resize-none mb-2" />
+          className="cf-input cf-focus w-full rounded px-4 py-3 text-sm resize-none mb-2" />
         <p className="text-xs cf-dim2 leading-relaxed mb-6">
           Shown to you, and to the operators of venues you work with. Never to other attendees.
         </p>
@@ -4314,7 +3928,7 @@ function ProfilePanel({ session, onClose, onSaved }) {
         {error && <p role="alert" className="text-sm mb-4" style={{ color: "var(--cf-red-text)" }}>{error}</p>}
 
         <button onClick={save} disabled={busy}
-          className="cf-focus cf-btn-primary rounded-xl px-5 py-3.5 cf-display font-bold uppercase text-sm tracking-wide w-full disabled:opacity-50">
+          className="cf-focus cf-btn-primary rounded px-5 py-3.5 cf-display font-semibold text-sm tracking-wide w-full disabled:opacity-50">
           {saved ? "Saved" : busy ? "Saving…" : "Save profile"}
         </button>
       </div>
@@ -4335,7 +3949,7 @@ function PortalShell({ role, session, navigate, signOut, onSession, tabs, active
           Sticky rather than fixed: it stays with you down a long session list without the
           content needing to reserve a gap for it, which is what left the dead band above. */}
       <div className="border-b sticky top-0 z-40"
-        style={{ borderColor: "var(--cf-line)", background: "rgba(11,16,24,0.88)", backdropFilter: "blur(12px)" }}>
+        style={{ borderColor: "var(--cf-line)", background: "rgba(247,244,238,0.9)", backdropFilter: "blur(12px)" }}>
         <div className="max-w-7xl mx-auto">
           <CoreHeaderBar
             accent={r.color}
@@ -4346,18 +3960,18 @@ function PortalShell({ role, session, navigate, signOut, onSession, tabs, active
                 {/* The mark, and the only way back to the public site from inside a portal.
                     Sign out is the other exit, and it is next to the account where it belongs. */}
                 <a href="#/" onClick={(e) => { e.preventDefault(); navigate("/"); }}
-                  aria-label="Concourse — back to site"
+                  aria-label="Concourse - back to site"
                   className="cf-focus rounded shrink-0 hidden sm:flex items-center pr-3 mr-1 border-r"
                   style={{ borderColor: "var(--cf-line)" }}>
                   <LogoMark size={26} />
                 </a>
-                <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                <span className="w-9 h-9 rounded flex items-center justify-center shrink-0"
                   style={{ background: `color-mix(in oklab, ${r.color} 18%, transparent)` }}>
                   <r.Icon className="w-4.5 h-4.5" style={{ color: r.color }} strokeWidth={2} />
                 </span>
                 <span className="min-w-0">
                   <span className="cf-accent text-[9px] cf-dim2 block leading-none mb-1">{r.who.toUpperCase()}</span>
-                  <h1 className="cf-display font-black uppercase text-lg sm:text-xl tracking-tight leading-none italic">
+                  <h1 className="cf-display font-semibold text-lg sm:text-xl tracking-tight leading-none italic">
                     {r.label} portal
                   </h1>
                 </span>
@@ -4369,7 +3983,7 @@ function PortalShell({ role, session, navigate, signOut, onSession, tabs, active
             onUserClick={() => setProfileOpen(true)}
             right={
               <button onClick={() => { signOut(); navigate("/access"); }}
-                className="cf-focus cf-btn-outline rounded-lg px-3.5 py-2 cf-accent text-[10px]">
+                className="cf-focus cf-btn-outline rounded px-3.5 py-2 cf-accent text-[10px]">
                 SIGN OUT
               </button>
             }
@@ -4534,11 +4148,11 @@ function WalkerApp({ session, navigate, signOut, onSession }) {
       <div className="cf-page-in min-h-screen flex items-center px-5 sm:px-6 py-24 sm:py-32" data-portal="walker">
         <div className="w-full max-w-5xl mx-auto grid lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] gap-10 lg:gap-16 items-center">
           <Reveal>
-            <div className="cf-card rounded-2xl p-6 sm:p-8">
-              <span className="w-12 h-12 rounded-xl flex items-center justify-center mb-6" style={{ background: "rgba(77,141,240,0.16)" }}>
+            <div className="cf-card rounded-md p-6 sm:p-8">
+              <span className="w-12 h-12 rounded flex items-center justify-center mb-6" style={{ background: "rgba(77,141,240,0.16)" }}>
                 <MapPin className="w-6 h-6 cf-blue-hi" strokeWidth={2} aria-hidden="true" />
               </span>
-              <h1 className="cf-display font-black uppercase text-3xl sm:text-4xl tracking-tight mb-2">Check in</h1>
+              <h1 className="cf-display font-semibold text-3xl sm:text-4xl tracking-tight mb-2">Check in</h1>
               <p id="cf-checkin-help" className="text-sm cf-dim leading-relaxed mb-7">
                 Type the venue code from the signage at your entrance. The map loads live
                 from the venue's own simulation, so what you see is what the operators see.
@@ -4557,7 +4171,7 @@ function WalkerApp({ session, navigate, signOut, onSession }) {
                 autoCapitalize="characters" autoCorrect="off" spellCheck={false}
                 aria-describedby={joinError ? "cf-checkin-error" : "cf-checkin-help"}
                 aria-invalid={joinError ? true : undefined}
-                className="cf-input cf-focus w-full rounded-xl px-4 py-4 text-lg cf-display font-bold tracking-[0.3em] text-center mb-4" />
+                className="cf-input cf-focus w-full rounded px-4 py-4 text-lg cf-display font-medium tracking-[0.3em] text-center mb-4" />
 
               {/* role="alert" so a screen reader announces the failure instead of leaving the
                   person waiting on a check-in that silently did not happen. */}
@@ -4568,7 +4182,7 @@ function WalkerApp({ session, navigate, signOut, onSession }) {
               )}
 
               <button onClick={join} disabled={flow.busy}
-                className="cf-focus cf-btn-primary rounded-xl px-5 py-4 cf-display font-bold uppercase text-sm tracking-wide w-full disabled:opacity-50">
+                className="cf-focus cf-btn-primary rounded px-5 py-4 cf-display font-semibold text-sm tracking-wide w-full disabled:opacity-50">
                 {flow.busy ? "Checking in…" : "Check in"}
               </button>
 
@@ -4584,19 +4198,19 @@ function WalkerApp({ session, navigate, signOut, onSession }) {
               <ul className="space-y-6">
                 {[
                   [Map, "The venue map, live",
-                    "Every zone shaded by how full it actually is right now — blue is clear, red is a crush."],
+                    "Every zone shaded by how full it actually is right now: blue is clear, red is a crush."],
                   [Route, "A way out around the crowd",
                     "The route is planned around the congestion rather than straight through it, and it re-plans as the crowd moves."],
                   [ShieldCheck, "You are not being tracked",
                     "Your position is the zone you tell us you are in. No GPS, no trail, and no other attendee is ever shown to you."],
                 ].map(([Icon, title, body]) => (
                   <li key={title} className="flex gap-4">
-                    <span className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center mt-0.5"
+                    <span className="w-9 h-9 rounded shrink-0 flex items-center justify-center mt-0.5"
                       style={{ background: "rgba(77,141,240,0.12)" }}>
                       <Icon className="w-4.5 h-4.5 cf-blue-hi" strokeWidth={2} aria-hidden="true" />
                     </span>
                     <span className="min-w-0">
-                      <span className="cf-display font-bold uppercase text-sm tracking-wide block mb-1">{title}</span>
+                      <span className="cf-display font-semibold text-sm tracking-wide block mb-1">{title}</span>
                       <span className="text-sm cf-dim leading-relaxed block">{body}</span>
                     </span>
                   </li>
@@ -4619,7 +4233,7 @@ function WalkerApp({ session, navigate, signOut, onSession }) {
         <div>
           <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
             <div>
-              <div className="cf-display font-bold uppercase text-xl tracking-wide">{venue.name}</div>
+              <div className="cf-display font-medium text-xl tracking-wide">{venue.name}</div>
               <div className="cf-mono text-[11px] cf-dim2">
                 CODE {normaliseCode(info?.venueId ?? venue.id)}
               </div>
@@ -4632,7 +4246,7 @@ function WalkerApp({ session, navigate, signOut, onSession }) {
                 if (flow.sessionId) api.removeWalker(flow.sessionId, walkerId).catch(() => {});
                 flow.leave(); setAtNodeId(null); setDestinationId(null);
               }}
-                className="cf-focus cf-btn-outline rounded-lg px-3.5 py-2 cf-accent text-[10px]">
+                className="cf-focus cf-btn-outline rounded px-3.5 py-2 cf-accent text-[10px]">
                 CHANGE VENUE
               </button>
             </div>
@@ -4647,11 +4261,11 @@ function WalkerApp({ session, navigate, signOut, onSession }) {
             showDensity showPeople={false} height={520}
             onSelectHall={setAtNodeId} selectedHall={atNodeId} />
 
-          <div className="cf-card rounded-xl px-5 py-4 mt-4 flex items-start gap-3">
+          <div className="cf-card rounded px-5 py-4 mt-4 flex items-start gap-3">
             <MapPin className="w-4 h-4 cf-blue-hi shrink-0 mt-0.5" strokeWidth={2} />
             <p className="text-sm cf-dim leading-relaxed">
-              Tap the zone you're standing in. The venue is told which zone that is — never a
-              coordinate — so staff see how full each area is, not where you are. You are not
+              Tap the zone you're standing in. The venue is told which zone that is, never a
+              coordinate, so staff see how full each area is, not where you are. You are not
               named, nothing is linked to an account, and you stop counting about thirty seconds
               after you close this. Other attendees are never shown to you.
             </p>
@@ -4659,14 +4273,14 @@ function WalkerApp({ session, navigate, signOut, onSession }) {
         </div>
 
         <div className="flex flex-col gap-4">
-          <div className="cf-card rounded-2xl p-5">
-            <div className="cf-accent text-[10px] cf-dim2 mb-3">YOU ARE IN</div>
+          <div className="cf-card rounded-md p-5">
+            <div className="cf-accent text-[10px] cf-dim2 mb-3">You are in</div>
             <div className="flex items-center gap-3 mb-2">
               <span className="relative flex w-3 h-3">
                 <span className="absolute inline-flex h-full w-full rounded-full cf-ping" style={{ background: "var(--cf-blue-hi)", opacity: .5 }} />
                 <span className="relative inline-flex rounded-full w-3 h-3" style={{ background: "var(--cf-blue-hi)" }} />
               </span>
-              <span className="text-sm font-semibold">{here?.name ?? "—"}</span>
+              <span className="text-sm font-semibold">{here?.name ?? "-"}</span>
             </div>
             <div className="cf-mono text-[11px] cf-dim2">ZONE-LEVEL · TAP THE MAP TO CHANGE</div>
           </div>
@@ -4674,9 +4288,9 @@ function WalkerApp({ session, navigate, signOut, onSession }) {
           {/* Turn-by-turn, coloured by what each leg is like to walk. */}
           <RouteSteps route={route} venue={venue} />
 
-          <div className="cf-card rounded-2xl p-5">
+          <div className="cf-card rounded-md p-5">
             <div className="flex items-center justify-between mb-3">
-              <span className="cf-accent text-[10px] cf-dim2">EXITS</span>
+              <span className="cf-accent text-[10px] cf-dim2">Exits</span>
               {destinationId && (
                 <button onClick={() => setDestinationId(null)}
                   className="cf-focus cf-btn-ghost cf-mono text-[9px]">CLEAR</button>
@@ -4690,9 +4304,9 @@ function WalkerApp({ session, navigate, signOut, onSession }) {
                 return (
                   <button key={h.id}
                     onClick={() => setDestinationId(h.id === destinationId ? null : h.id)}
-                    className="cf-focus flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-colors"
+                    className="cf-focus flex items-center justify-between gap-3 rounded px-3 py-2.5 text-left transition-colors"
                     style={chosen
-                      ? { background: "rgba(255,255,255,0.05)", border: `1px solid ${band.color}` }
+                      ? { background: "rgba(33,30,26,0.04)", border: `1px solid ${band.color}` }
                       : { border: "1px solid transparent" }}>
                     <span className="flex items-center gap-2.5 min-w-0">
                       <LogOut className="w-3.5 h-3.5 shrink-0" style={{ color: band.color }} />
@@ -4707,19 +4321,19 @@ function WalkerApp({ session, navigate, signOut, onSession }) {
               {!exits.length && <p className="text-sm cf-dim">This venue has no marked exit.</p>}
             </div>
             {exits.length > 0 && (
-              <p className="cf-mono text-[9px] cf-dim2 mt-2.5">TAP AN EXIT TO ROUTE THERE</p>
+              <p className="cf-mono text-[9px] cf-dim2 mt-2.5">Tap an exit to route there</p>
             )}
           </div>
 
           {venue.pois.length > 0 && (
-            <div className="cf-card rounded-2xl p-5">
-              <div className="cf-accent text-[10px] cf-dim2 mb-3">FACILITIES</div>
+            <div className="cf-card rounded-md p-5">
+              <div className="cf-accent text-[10px] cf-dim2 mb-3">Facilities</div>
               <div className="flex flex-col gap-2">
                 {venue.pois.map((p) => {
                   const Icon = POI_ICON[p.kind] ?? MapPin;
                   return (
                     <button key={p.id} onClick={() => setDestinationId(p.id.replace(/^poi-/, ""))}
-                      className="cf-focus flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left hover:bg-white/5 transition-colors">
+                      className="cf-focus flex items-center gap-2.5 rounded px-3 py-2.5 text-left hover:bg-white/5 transition-colors">
                       <Icon className="w-3.5 h-3.5 cf-blue-hi shrink-0" />
                       <span className="text-sm">{p.name}</span>
                     </button>
@@ -4768,11 +4382,11 @@ export function RouteBanner({ route, venue }) {
       initial={reduced ? false : { opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-      className="cf-card rounded-xl px-4 py-3.5 mb-4 flex items-start gap-3"
+      className="cf-card rounded px-4 py-3.5 mb-4 flex items-start gap-3"
       style={{ borderColor: `color-mix(in oklab, ${tone.color} 45%, transparent)` }}>
       <tone.Icon className="w-4 h-4 shrink-0 mt-0.5" style={{ color: tone.color }} strokeWidth={2} />
       <div className="min-w-0">
-        <div className="cf-display font-bold uppercase text-sm tracking-wide"
+        <div className="cf-display font-semibold text-sm tracking-wide"
           style={{ color: tone.color }}>{tone.title}</div>
         <p className="text-sm cf-dim leading-relaxed mt-0.5">{tone.body}</p>
       </div>
@@ -4791,9 +4405,9 @@ export function RouteSteps({ route, venue }) {
   if (!route?.segments?.length) return null;
 
   return (
-    <div className="cf-card rounded-2xl p-5">
+    <div className="cf-card rounded-md p-5">
       <div className="flex items-center justify-between mb-4">
-        <span className="cf-accent text-[10px] cf-dim2">YOUR WAY OUT</span>
+        <span className="cf-accent text-[10px] cf-dim2">Recommended route</span>
         <span className="cf-mono text-[10px]" style={{ color: route.band.color }}>
           {route.distance}m
         </span>
@@ -4812,8 +4426,8 @@ export function RouteSteps({ route, venue }) {
               <div className="flex flex-col items-center">
                 <span className="w-2.5 h-2.5 rounded-full shrink-0 mt-1.5"
                   style={{
-                    background: i === 0 ? "var(--cf-blue-hi)" : last ? "var(--cf-violet)" : band?.color,
-                    boxShadow: i === 0 ? "0 0 0 3px rgba(77,141,240,.2)" : undefined,
+                    background: i === 0 ? "var(--cf-way-in)" : last ? "var(--cf-way-out)" : band?.color,
+                    boxShadow: i === 0 ? "0 0 0 3px rgba(95,107,57,.18)" : undefined,
                   }} />
                 {!last && (
                   <span className="w-0.5 flex-1 my-1 rounded-full"
@@ -4907,7 +4521,7 @@ function SessionSetup({ onCreate, busy, error, initialVenue = null, onNeedsTraci
         setParseError(null);
         if (!codeTouched) setCode(suggestCode(parsed.name));
       } catch (cause) {
-        setParseError(`${file.name} is not a usable venue layout — ${cause.message}`);
+        setParseError(`${file.name} is not a usable venue layout. ${cause.message}`);
       }
     };
     reader.readAsText(file);
@@ -4925,14 +4539,14 @@ function SessionSetup({ onCreate, busy, error, initialVenue = null, onNeedsTraci
       <input
         type="number" min={min} max={max} value={settings[key]}
         onChange={(e) => setSettings((s) => ({ ...s, [key]: Number(e.target.value) }))}
-        className="cf-input cf-focus rounded-lg px-3 py-2 cf-mono text-sm" />
+        className="cf-input cf-focus rounded px-3 py-2 cf-mono text-sm" />
     </label>
   );
 
   return (
     <div className="grid lg:grid-cols-2 gap-6">
       <div>
-        <div className="cf-display font-bold uppercase text-lg tracking-wide mb-2">Venue layout</div>
+        <div className="cf-display font-medium text-lg tracking-wide mb-2">Venue layout</div>
         <p className="text-sm cf-dim leading-relaxed mb-5">
           Drop a picture of your floor plan and it gets traced into a map. The sample arena
           is loaded and ready if you just want to see a crowd run.
@@ -4942,10 +4556,10 @@ function SessionSetup({ onCreate, busy, error, initialVenue = null, onNeedsTraci
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => { e.preventDefault(); readVenue(e.dataTransfer.files?.[0]); }}
           onClick={() => fileRef.current?.click()}
-          className="cf-focus rounded-2xl border-2 border-dashed flex flex-col items-center justify-center text-center px-6 py-10 cursor-pointer transition-all"
+          className="cf-focus rounded-md border-2 border-dashed flex flex-col items-center justify-center text-center px-6 py-10 cursor-pointer transition-all"
           style={{ borderColor: "var(--cf-line2)" }}>
           <Upload className="w-6 h-6 cf-dim2 mb-3" strokeWidth={1.6} />
-          <div className="cf-display font-bold uppercase text-sm tracking-wide mb-1">{fileName}</div>
+          <div className="cf-display font-semibold text-sm tracking-wide mb-1">{fileName}</div>
           <p className="text-xs cf-dim2">
             {venueJson.nodes.length} zones · {venueJson.edges.length} walkways · click to replace
           </p>
@@ -4958,17 +4572,17 @@ function SessionSetup({ onCreate, busy, error, initialVenue = null, onNeedsTraci
             onChange={(e) => readVenue(e.target.files?.[0])} />
         </div>
         <p className="text-xs cf-dim2 mt-2.5">
-          PNG, JPG or WEBP floor plan — or a venue JSON you traced earlier.
+          PNG, JPG or WEBP floor plan, or a venue JSON you traced earlier.
         </p>
         {parseError && <p className="text-sm mt-3" style={{ color: "var(--cf-red-text)" }}>{parseError}</p>}
 
         {/* The venue code. Deliberately on the layout side of the form rather than with
             the crowd settings: it identifies the building, and it outlives any one run. */}
         <div className="mt-6">
-          <div className="cf-display font-bold uppercase text-lg tracking-wide mb-2">Venue code</div>
+          <div className="cf-display font-medium text-lg tracking-wide mb-2">Venue code</div>
           <p className="text-sm cf-dim leading-relaxed mb-4">
             Put this on your entrance signage. Attendees type it to check in and see the
-            live map of your venue — it stays the same across every session you run here.
+            live map of your venue. It stays the same across every session you run here.
           </p>
           <input
             value={code}
@@ -4977,19 +4591,19 @@ function SessionSetup({ onCreate, busy, error, initialVenue = null, onNeedsTraci
             aria-invalid={!!codeIssue}
             autoCapitalize="characters" autoCorrect="off" spellCheck={false}
             placeholder="WEMBLEY-01"
-            className="cf-input cf-focus w-full rounded-xl px-4 py-4 text-lg cf-display font-bold tracking-[0.3em] text-center" />
+            className="cf-input cf-focus w-full rounded px-4 py-4 text-lg cf-display font-medium tracking-[0.3em] text-center" />
           {codeIssue
             ? <p className="text-sm mt-2" style={{ color: "var(--cf-red-text)" }}>{codeIssue}</p>
             : (
               <p className="cf-mono text-[10px] cf-dim2 mt-2">
-                ATTENDEES CHECK IN WITH <span style={{ color: "var(--cf-orange)" }}>{normaliseCode(code)}</span>
+                ATTENDEES CHECK IN WITH <span style={{ color: "var(--cf-cobalt-text)" }}>{normaliseCode(code)}</span>
               </p>
             )}
         </div>
       </div>
 
       <div>
-        <div className="cf-display font-bold uppercase text-lg tracking-wide mb-2">Crowd</div>
+        <div className="cf-display font-medium text-lg tracking-wide mb-2">Crowd</div>
         <p className="text-sm cf-dim leading-relaxed mb-5">
           How many people arrive, and how fast. With rerouting on, a hidden baseline run
           executes alongside on the same seed so the summary has a real before and after.
@@ -5008,7 +4622,7 @@ function SessionSetup({ onCreate, busy, error, initialVenue = null, onNeedsTraci
             <button
               onClick={() => setSettings((s) => ({ ...s, rerouteEnabled: !s.rerouteEnabled }))}
               aria-pressed={settings.rerouteEnabled}
-              className="cf-focus cf-btn-outline rounded-lg px-3 py-2 cf-mono text-sm text-left"
+              className="cf-focus cf-btn-outline rounded px-3 py-2 cf-mono text-sm text-left"
               style={settings.rerouteEnabled ? { color: "var(--cf-green)", borderColor: "var(--cf-green)" } : {}}>
               {settings.rerouteEnabled ? "ON" : "OFF"}
             </button>
@@ -5017,8 +4631,8 @@ function SessionSetup({ onCreate, busy, error, initialVenue = null, onNeedsTraci
 
         <button
           onClick={create} disabled={busy || !!codeIssue}
-          className="cf-focus cf-btn-primary rounded-xl px-5 py-3.5 cf-display font-bold uppercase text-sm tracking-wide w-full disabled:opacity-50">
-          {busy ? "Creating…" : "Create session"}
+          className="cf-focus cf-btn-primary rounded px-5 py-3.5 cf-display font-semibold text-sm tracking-wide w-full disabled:opacity-50">
+          {busy ? "Starting…" : "Start simulation"}
         </button>
         <div className="mt-4"><ErrorNote error={error} /></div>
       </div>
@@ -5031,9 +4645,9 @@ function SessionControls({ info, busy, onStart, onPause, onStop, connected }) {
   const status = info?.status ?? "CREATED";
   const terminal = status === "STOPPED" || status === "COMPLETED";
   return (
-    <div className="cf-card rounded-2xl p-5">
+    <div className="cf-card rounded-md p-5">
       <div className="flex items-center justify-between mb-4">
-        <span className="cf-accent text-[10px] cf-dim2">SESSION</span>
+        <span className="cf-accent text-[10px] cf-dim2">Session</span>
         <ConnectionPill connected={connected} status={status} />
       </div>
       <div className="cf-mono text-[11px] cf-dim2 mb-1">{info?.sessionId}</div>
@@ -5054,14 +4668,14 @@ function SessionControls({ info, busy, onStart, onPause, onStop, connected }) {
           simply stops, with nothing on screen saying why. Say it plainly, and offer
           the way forward rather than leaving three disabled buttons. */}
       {terminal && (
-        <div className="rounded-lg px-3 py-2.5 mb-3"
+        <div className="rounded px-3 py-2.5 mb-3"
           style={{ background: "rgba(77,141,240,0.1)", border: "1px solid rgba(77,141,240,0.3)" }}>
           <div className="cf-mono text-[10px] mb-1" style={{ color: "var(--cf-blue-hi)" }}>
             {status === "COMPLETED" ? "RUN FINISHED" : "RUN STOPPED"}
           </div>
           <p className="text-xs cf-dim leading-relaxed">
             {status === "COMPLETED"
-              ? `Reached tick ${info?.maxTicks ?? 0}, so the crowd has stopped moving. Start a new session to run again — raise MAX TICKS for a longer run.`
+              ? `Reached tick ${info?.maxTicks ?? 0}, so the crowd has stopped moving. Start a new session to run again, and raise MAX TICKS for a longer run.`
               : "You stopped this run. Start a new session to run again."}
           </p>
         </div>
@@ -5069,11 +4683,11 @@ function SessionControls({ info, busy, onStart, onPause, onStop, connected }) {
 
       <div className="grid grid-cols-3 gap-2">
         <button onClick={onStart} disabled={busy || terminal || status === "RUNNING"}
-          className="cf-focus cf-btn-primary rounded-lg px-3 py-2.5 cf-accent text-[10px] disabled:opacity-40">START</button>
+          className="cf-focus cf-btn-primary rounded px-3 py-2.5 cf-accent text-[10px] disabled:opacity-40">START</button>
         <button onClick={onPause} disabled={busy || status !== "RUNNING"}
-          className="cf-focus cf-btn-outline rounded-lg px-3 py-2.5 cf-accent text-[10px] disabled:opacity-40">PAUSE</button>
+          className="cf-focus cf-btn-outline rounded px-3 py-2.5 cf-accent text-[10px] disabled:opacity-40">PAUSE</button>
         <button onClick={onStop} disabled={busy || terminal}
-          className="cf-focus cf-btn-outline rounded-lg px-3 py-2.5 cf-accent text-[10px] disabled:opacity-40">STOP</button>
+          className="cf-focus cf-btn-outline rounded px-3 py-2.5 cf-accent text-[10px] disabled:opacity-40">STOP</button>
       </div>
     </div>
   );
@@ -5098,7 +4712,7 @@ export function HazardAlerts({ hazards }) {
   const critical = top.filter((h) => hazardWarning(h).severity === "CRITICAL").length;
 
   return (
-    <div className="cf-card rounded-2xl p-5"
+    <div className="cf-card rounded-md p-5"
       style={critical ? { borderColor: "rgba(225,6,0,.5)" } : {}}>
       <div className="flex items-center justify-between mb-4">
         <span className="flex items-center gap-2">
@@ -5236,18 +4850,18 @@ function GeorefPanel({ venue }) {
   };
 
   return (
-    <div className="cf-card rounded-2xl p-6">
-      <div className="cf-display font-bold uppercase text-lg tracking-wide mb-2">
+    <div className="cf-card rounded-md p-6">
+      <div className="cf-display font-medium text-lg tracking-wide mb-2">
         GPS reference
       </div>
       <p className="text-sm cf-dim leading-relaxed mb-5">
         Stand in three zones and record the coordinates your phone reports, or read them off a map
         app. Attendees on the mobile app can then be placed automatically instead of tapping their
-        zone. Without this the app still works — it just asks people where they are.
+        zone. Without this the app still works. It just asks people where they are.
       </p>
 
       {result ? (
-        <div className="cf-card-solid rounded-xl p-4 mb-5">
+        <div className="cf-card-solid rounded p-4 mb-5">
           <div className="flex items-center gap-2 mb-2">
             <Check className="w-4 h-4" style={{ color: "var(--cf-green)" }} strokeWidth={2.5} />
             <span className="text-sm font-semibold">This venue is georeferenced</span>
@@ -5259,11 +4873,11 @@ function GeorefPanel({ venue }) {
               who drew it is better placed than the server to judge how much is too much. */}
           {result.shearDegrees > 15 && (
             <div className="cf-mono text-[11px] mt-2" style={{ color: "var(--cf-amber)" }}>
-              High shear — the fit may be absorbing anchor error. Check the three readings.
+              High shear. The fit may be absorbing anchor error. Check the three readings.
             </div>
           )}
           <button onClick={clear} disabled={busy}
-            className="cf-focus cf-btn-outline rounded-lg px-3 py-1.5 cf-accent text-[10px] mt-3">
+            className="cf-focus cf-btn-outline rounded px-3 py-1.5 cf-accent text-[10px] mt-3">
             REMOVE
           </button>
         </div>
@@ -5277,31 +4891,31 @@ function GeorefPanel({ venue }) {
         {rows.map((row, i) => (
           <div key={i} className="grid grid-cols-[1fr_7rem_7rem] gap-2">
             <select value={row.nodeId} onChange={(e) => setRow(i, { nodeId: e.target.value })}
-              className="cf-input cf-focus rounded-lg px-3 py-2 text-sm">
+              className="cf-input cf-focus rounded px-3 py-2 text-sm">
               {zones.map((zone) => (
                 <option key={zone.id} value={zone.id}>{zone.name}</option>
               ))}
             </select>
             <input value={row.lat} onChange={(e) => setRow(i, { lat: e.target.value })}
               placeholder="lat" inputMode="decimal"
-              className="cf-input cf-focus rounded-lg px-3 py-2 text-sm cf-mono" />
+              className="cf-input cf-focus rounded px-3 py-2 text-sm cf-mono" />
             <input value={row.lng} onChange={(e) => setRow(i, { lng: e.target.value })}
               placeholder="lng" inputMode="decimal"
-              className="cf-input cf-focus rounded-lg px-3 py-2 text-sm cf-mono" />
+              className="cf-input cf-focus rounded px-3 py-2 text-sm cf-mono" />
           </div>
         ))}
       </div>
 
       <p className="cf-mono text-[10px] cf-dim2 mt-3 leading-relaxed">
         USE GATES AND EXITS. A zone's radius comes from its capacity, so a gate is a few metres
-        across and a large stand is tens — and how close to a zone's centre you stood is the limit
+        across and a large stand is tens. How close to a zone's centre you stood is the limit
         on how accurate any of this can be.
       </p>
 
       <ErrorNote error={error} />
 
       <button onClick={save} disabled={busy}
-        className="cf-focus cf-btn-primary rounded-xl px-5 py-3 cf-display font-bold uppercase text-sm tracking-wide w-full mt-4 disabled:opacity-50">
+        className="cf-focus cf-btn-primary rounded px-5 py-3 cf-display font-semibold text-sm tracking-wide w-full mt-4 disabled:opacity-50">
         {busy ? "Saving…" : result ? "Replace anchors" : "Set anchors"}
       </button>
     </div>
@@ -5340,19 +4954,19 @@ function ClientApp({ session, navigate, signOut, onSession }) {
           <div>
             <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
               <div>
-                <div className="cf-display font-bold uppercase text-xl tracking-wide">{venue.name}</div>
+                <div className="cf-display font-medium text-xl tracking-wide">{venue.name}</div>
                 {/* The code, given the prominence it needs: this is the string that has
                     to end up on the signage, and an operator should be able to read it
                     off this screen without hunting. */}
                 <div className="flex items-center gap-2 mt-1">
                   <span className="cf-accent text-[9px] cf-dim2">CHECK-IN CODE</span>
-                  <span className="cf-display font-bold text-sm tracking-[0.25em] px-2 py-0.5 rounded"
-                    style={{ background: "rgba(255,106,0,0.14)", color: "var(--cf-orange)" }}>
+                  <span className="cf-display font-medium text-sm tracking-[0.25em] px-2 py-0.5 rounded"
+                    style={{ background: "rgba(228,233,240,0.08)", color: "var(--cf-cobalt-text)" }}>
                     {normaliseCode(info?.venueId ?? venue.id)}
                   </span>
                 </div>
               </div>
-              <button onClick={flow.leave} className="cf-focus cf-btn-outline rounded-lg px-3.5 py-2 cf-accent text-[10px]">
+              <button onClick={flow.leave} className="cf-focus cf-btn-outline rounded px-3.5 py-2 cf-accent text-[10px]">
                 NEW SESSION
               </button>
             </div>
@@ -5387,9 +5001,11 @@ function ClientApp({ session, navigate, signOut, onSession }) {
                 headcount. */}
             <HazardAlerts hazards={hazards} />
 
-            <div className="cf-card rounded-2xl p-5">
-              <div className="cf-accent text-[10px] cf-dim2 mb-4">INSIDE NOW</div>
-              <div className="cf-display font-black text-4xl mb-1 tabular-nums">
+            <div className="cf-card rounded-md p-5">
+              <div className="cf-accent text-[10px] cf-dim2 mb-4">People inside</div>
+              <div className="cf-display font-semibold tabular-nums leading-none mb-2"
+                style={{ fontSize: "clamp(2.8rem, 5vw, 3.8rem)", letterSpacing: "-0.045em",
+                         color: "var(--cf-ink)" }}>
                 <CountUp value={metrics?.peopleInside ?? 0} />
               </div>
               <div className="cf-mono text-[11px] cf-dim2 mb-4">
@@ -5407,7 +5023,7 @@ function ClientApp({ session, navigate, signOut, onSession }) {
               )}
               <DensityBar height={8}
                 density={(metrics?.peopleInside ?? 0) / Math.max(1, venue.capacity)}
-                color="linear-gradient(90deg, var(--cf-orange), var(--cf-red))" />
+                color="var(--cf-metal)" />
               <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t cf-hairline">
                 <div>
                   <div className="text-[10px] cf-mono cf-dim2 mb-0.5">PEAK DENSITY</div>
@@ -5420,8 +5036,8 @@ function ClientApp({ session, navigate, signOut, onSession }) {
               </div>
             </div>
 
-            <div className="cf-card rounded-2xl p-5 flex-1">
-              <div className="cf-accent text-[10px] cf-dim2 mb-4">ZONE STATUS</div>
+            <div className="cf-card rounded-md p-5 flex-1">
+              <div className="cf-accent text-[10px] cf-dim2 mb-4">Zone conditions</div>
               <div className="flex flex-col gap-3">
                 {venue.halls.map((h) => (
                   <div key={h.id}>
@@ -5437,13 +5053,13 @@ function ClientApp({ session, navigate, signOut, onSession }) {
               </div>
             </div>
 
-            <div className="cf-card rounded-2xl p-5" style={advisory ? { borderColor: "rgba(225,6,0,.35)" } : {}}>
+            <div className="cf-card rounded-md p-5" style={advisory ? { borderColor: "rgba(225,6,0,.35)" } : {}}>
               <div className="flex items-center gap-2 mb-2">
                 <AlertTriangle className={`w-3.5 h-3.5 ${advisory ? "cf-red" : "cf-dim2"}`} />
-                <span className={`cf-accent text-[10px] ${advisory ? "cf-red" : "cf-dim2"}`}>ADVISORY</span>
+                <span className={`cf-accent text-[10px] ${advisory ? "cf-red" : "cf-dim2"}`}>Operations note</span>
               </div>
               <p className="text-sm cf-dim leading-relaxed">
-                {advisory ?? "No advisory yet — the AI layer is called once density moves enough to be worth asking about."}
+                {advisory ?? "No advisory yet. The AI layer is called once density moves enough to be worth asking about."}
               </p>
               {aiStatus && <div className="cf-mono text-[10px] cf-dim2 mt-3">AI · {aiStatus}</div>}
             </div>
@@ -5456,7 +5072,7 @@ function ClientApp({ session, navigate, signOut, onSession }) {
       {/* AI tracing. Its own tab rather than a step inside session setup, because a plan
           is traced once for a building and then reused for every run on it. */}
       {tab === "GPS" && !venue && (
-        <div className="cf-card rounded-2xl px-6 py-14 text-center">
+        <div className="cf-card rounded-md px-6 py-14 text-center">
           <p className="text-sm cf-dim">Create a session on the Live tab to georeference its venue.</p>
         </div>
       )}
@@ -5465,18 +5081,37 @@ function ClientApp({ session, navigate, signOut, onSession }) {
 
       {tab === "AI layout" && (
         <div>
-          <div className="cf-card rounded-2xl p-6 mb-6 flex items-start gap-4">
-            <span className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: "rgba(255,106,0,0.16)" }}>
-              <Cpu className="w-5 h-5 cf-orange" strokeWidth={2} />
+          {/* The input, before the abstraction. A real concourse under real exit
+              signage is what the tracer turns into halls, gates and edges. */}
+          <div className="relative rounded-md overflow-hidden mb-6" style={{ height: "clamp(11rem, 22vw, 16rem)" }}>
+            <img
+              src="https://images.unsplash.com/photo-1662251655454-cd72bd7fe6ed?w=1800&q=72&auto=format&fit=crop"
+              alt="A station concourse with people crossing it beneath exit signage"
+              loading="lazy" decoding="async"
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{ filter: "grayscale(0.72) contrast(1.06) brightness(0.6)" }} />
+            <div aria-hidden="true" className="absolute inset-0"
+              style={{ background: "linear-gradient(180deg, rgba(16,17,16,.25) 0%, rgba(16,17,16,.5) 55%, var(--cf-card) 100%)" }} />
+            <div className="absolute inset-x-0 bottom-0 p-6">
+              <p className="cf-display font-medium tracking-tight"
+                style={{ fontSize: "clamp(1.1rem, 2vw, 1.5rem)", letterSpacing: "-0.02em", color: "var(--cf-ink)" }}>
+                Every venue is already a graph. It just has not been written down yet.
+              </p>
+            </div>
+          </div>
+
+          <div className="cf-card rounded-md p-6 mb-6 flex items-start gap-4">
+            <span className="w-11 h-11 rounded flex items-center justify-center shrink-0"
+              style={{ background: "rgba(201,205,212,0.12)" }}>
+              <Cpu className="w-5 h-5" style={{ color: "var(--cf-metal)" }} strokeWidth={2} />
             </span>
             <div className="min-w-0">
-              <div className="cf-display font-bold uppercase text-base tracking-wide mb-1.5">
+              <div className="cf-display font-medium text-base tracking-wide mb-1.5">
                 Turn a floor plan into a walkable map
               </div>
               <p className="text-sm cf-dim leading-relaxed">
-                Upload a 2D plan of your venue and a vision model reads it — halls, gates,
-                exits — while computer vision traces the walkable space into the pathways
+                Upload a 2D plan of your venue and a vision model reads it: halls, gates,
+                exits, while computer vision traces the walkable space into the pathways
                 the simulation actually routes people along. Check what it found, fix
                 anything it got wrong, then run a session on it.
               </p>
@@ -5487,7 +5122,7 @@ function ClientApp({ session, navigate, signOut, onSession }) {
                     {tracedVenue.nodes?.length ?? 0} zones · {tracedVenue.edges?.length ?? 0} pathways ready
                   </span>
                   <button onClick={() => { flow.leave(); setTab("Live"); }}
-                    className="cf-focus cf-btn-primary rounded-lg px-4 py-2 cf-accent text-[10px]">
+                    className="cf-focus cf-btn-primary rounded px-4 py-2 cf-accent text-[10px]">
                     USE IT FOR A SESSION
                   </button>
                 </div>
@@ -5577,12 +5212,14 @@ function AdminApp({ session, navigate, signOut, onSession }) {
               { v: totals.venues, l: "ACTIVE VENUES", f: (n) => Math.round(n) },
               { v: totals.inside, l: "PEOPLE INSIDE" },
               { v: totals.critical, l: "ZONES CRITICAL", c: totals.critical ? "var(--cf-red)" : undefined, f: (n) => Math.round(n) },
-              { v: totals.peakRisk, l: "PEAK PREDICTED RISK", c: "var(--cf-orange)", f: (n) => n.toFixed(2) },
+              { v: totals.peakRisk, l: "PEAK PREDICTED RISK", c: "var(--cf-cobalt-text)", f: (n) => n.toFixed(2) },
             ].map((s, i) => (
-              <motion.div key={s.l} className="cf-card rounded-2xl p-6"
+              <motion.div key={s.l} className="cf-card rounded-md p-6"
                 initial={reduced ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: reduced ? 0 : 0.4, delay: reduced ? 0 : i * 0.06, ease: [0.16, 1, 0.3, 1] }}>
-                <div className="cf-display font-black text-3xl mb-1 tabular-nums" style={{ color: s.c || "var(--cf-ink)" }}>
+                <div className="cf-display font-semibold tabular-nums leading-none mb-2"
+                  style={{ color: s.c || "var(--cf-ink)",
+                           fontSize: "clamp(2.1rem, 3.4vw, 2.9rem)", letterSpacing: "-0.04em" }}>
                   <CountUp value={s.v} format={s.f} />
                 </div>
                 <div className="cf-accent text-[10px] cf-dim2">{s.l}</div>
@@ -5595,7 +5232,7 @@ function AdminApp({ session, navigate, signOut, onSession }) {
               <div className="flex flex-wrap items-center gap-2 mb-4">
                 {sessions.map((s) => (
                   <button key={s.sessionId} onClick={() => flow.attach(s.sessionId)}
-                    className="cf-focus cf-accent text-[11px] rounded-lg px-4 py-2 transition-colors"
+                    className="cf-focus cf-accent text-[11px] rounded px-4 py-2 transition-colors"
                     style={s.sessionId === flow.sessionId
                       ? { background: "color-mix(in oklab, var(--cf-red) 18%, transparent)", color: "var(--cf-red-text)", border: "1px solid var(--cf-red)" }
                       : { border: "1px solid var(--cf-line)", color: "var(--cf-dim)" }}>
@@ -5610,15 +5247,15 @@ function AdminApp({ session, navigate, signOut, onSession }) {
               {venue ? (
                 <VenueMap venue={venue} people={people} me={null} height={480} />
               ) : (
-                <div className="cf-card rounded-2xl px-6 py-20 text-center">
+                <div className="cf-card rounded-md px-6 py-20 text-center">
                   <p className="text-sm cf-dim">Select a session to watch its map.</p>
                 </div>
               )}
             </div>
-            <div className="cf-card rounded-2xl p-5">
+            <div className="cf-card rounded-md p-5">
               <div className="flex items-center gap-2 mb-4">
-                <Bell className="w-3.5 h-3.5 cf-orange" />
-                <span className="cf-accent text-[10px] cf-dim2">LIVE FEED</span>
+                <Bell className="w-3.5 h-3.5" style={{ color: "var(--cf-metal)" }} />
+                <span className="cf-accent text-[10px] cf-dim2">Live feed</span>
               </div>
               <div className="flex flex-col gap-4">
                 {/* `popLayout` so an arriving alert slides the rest down rather than
@@ -5653,16 +5290,16 @@ function AdminApp({ session, navigate, signOut, onSession }) {
       )}
 
       {tab === "Venues" && (
-        <div className="cf-card rounded-2xl overflow-hidden">
+        <div className="cf-card rounded-md overflow-hidden">
           <div className="hidden sm:grid grid-cols-[1fr_9rem_8rem_8rem_8rem] gap-4 px-6 py-3 border-b cf-hairline cf-accent text-[11px] cf-dim2">
-            <span>VENUE</span><span>SESSION</span><span>CROWD</span><span>INSIDE</span><span>STATUS</span>
+            <span>VENUE</span><span>Session</span><span>CROWD</span><span>INSIDE</span><span>STATUS</span>
           </div>
           {sessions.map((s) => {
             const meta = SESSION_STATUS_META[s.status] ?? SESSION_STATUS_META.CREATED;
             return (
               <div key={s.sessionId} className="grid sm:grid-cols-[1fr_9rem_8rem_8rem_8rem] gap-4 items-center px-6 py-4 border-b cf-hairline last:border-b-0 hover:bg-white/[0.02] transition-colors">
                 <div className="flex items-center gap-3">
-                  <span className="w-9 h-9 rounded-lg cf-chip flex items-center justify-center shrink-0"><Building2 className="w-4 h-4" /></span>
+                  <span className="w-9 h-9 rounded cf-chip flex items-center justify-center shrink-0"><Building2 className="w-4 h-4" /></span>
                   <div className="min-w-0">
                     <div className="font-semibold text-sm truncate">{s.venueName}</div>
                     <div className="cf-mono text-[10px] cf-dim2">
@@ -5684,7 +5321,7 @@ function AdminApp({ session, navigate, signOut, onSession }) {
       )}
 
       {tab === "Incidents" && (
-        <div className="cf-card rounded-2xl overflow-hidden">
+        <div className="cf-card rounded-md overflow-hidden">
           {incidents.map((inc) => {
             const meta = STATUS_META[inc.severity] ?? STATUS_META.OK;
             return (
@@ -5724,19 +5361,19 @@ function zoneName(venue, nodeId) {
 
 function Footer({ navigate }) {
   return (
-    <footer className="border-t cf-hairline relative" style={{ background: "rgba(5,7,11,0.6)" }}>
+    <footer className="border-t cf-hairline relative">
       <div className="max-w-7xl mx-auto px-6 py-14">
         <div className="grid md:grid-cols-[2fr_1fr_1fr] gap-10 mb-10">
           <div>
             <Wordmark size={32} className="mb-4" />
             <p className="cf-dim text-sm leading-relaxed max-w-sm mb-5">
-              Simulate the venue, predict the bottleneck, route around it — before the queue becomes a crush.
+              Simulate the venue, predict the bottleneck, route around it, before the queue becomes a crush.
             </p>
             {/* The density ramp as a legend. It is the one piece of visual language a reader
                 needs to interpret every map on the site, so it is worth restating at the end. */}
             <div className="flex items-center gap-2">
               <span className="cf-accent text-[10px] cf-dim2">CLEAR</span>
-              <span className="h-1.5 w-28 rounded-full" style={{ background: "linear-gradient(90deg, var(--cf-green), var(--cf-amber), var(--cf-orange), var(--cf-red))" }} />
+              <span className="h-1.5 w-28 rounded-full" style={{ background: "linear-gradient(90deg, var(--cf-sage), var(--cf-attention), var(--cf-coral))" }} />
               <span className="cf-accent text-[10px] cf-dim2">CRUSH</span>
             </div>
           </div>
@@ -5745,7 +5382,7 @@ function Footer({ navigate }) {
             <div className="flex flex-col gap-2">
               {NAV.map((r) => (
                 <a key={r.path} href={`#${r.path}`} onClick={(e) => { e.preventDefault(); navigate(r.path); }}
-                  className="text-sm cf-dim hover:text-white cf-focus rounded w-fit transition-all duration-300 hover:translate-x-1">{r.label}</a>
+                  className="text-sm cf-dim hover:text-[var(--cf-ink)] cf-focus rounded w-fit transition-all duration-300 hover:translate-x-1">{r.label}</a>
               ))}
             </div>
           </div>
@@ -5754,7 +5391,7 @@ function Footer({ navigate }) {
             <div className="flex flex-col gap-2">
               {Object.values(ROLES).map((r) => (
                 <a key={r.key} href={`#/login/${r.key}`} onClick={(e) => { e.preventDefault(); navigate(`/login/${r.key}`); }}
-                  className="text-sm cf-dim hover:text-white cf-focus rounded w-fit transition-all duration-300 hover:translate-x-1">{r.label}</a>
+                  className="text-sm cf-dim hover:text-[var(--cf-ink)] cf-focus rounded w-fit transition-all duration-300 hover:translate-x-1">{r.label}</a>
               ))}
             </div>
           </div>
@@ -5853,7 +5490,7 @@ export default function ConcourseApp() {
   return (
     <div className="cf-root">
       <style>{STYLE}</style>
-      <MeshField />
+      <WaveField />
       <div className="relative" style={{ zIndex: 2 }}>
         <Header route={route} navigate={navigate} session={session} signOut={signOut} inPortal={isPortal} />
         {/* `mode="wait"` so the outgoing page finishes leaving before the next arrives.
