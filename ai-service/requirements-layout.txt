@@ -10,11 +10,13 @@ scikit-image>=0.24
 python-multipart>=0.0.9     # FastAPI file uploads
 Pillow>=10.4
 
-# Reads the labels printed on a floor plan ("M.BED", "EXIT", "FOOD COURT") so zones are
-# named and typed from the drawing itself rather than left as anonymous junctions.
-# ONNX runtime, not torch: ~1.5s on CPU, no GPU, no system binary to install. This is
-# what makes the VLM optional rather than necessary for the common case.
-rapidocr-onnxruntime>=1.4
+# Label reading (rapidocr) lives in requirements-ocr.txt, not here. It pulls the whole
+# ONNX runtime, which is the largest single thing this service would load, and app/layout/
+# ocr.py already imports it inside a try/except: without it the pipeline traces the plan
+# from geometry alone and logs "plans will trace without labels".
+#
+# That split is what lets the service fit a 512MB instance. Tracing works; only the
+# reading of printed labels needs the extra install.
 
 # --- optional: enables the Qwen2.5-VL semantic stage -------------------------
 # Without these the pipeline runs CV-only and flags every parse as degraded.

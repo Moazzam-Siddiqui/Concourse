@@ -1,0 +1,10 @@
+# Optional: reads the labels printed on a floor plan ("M.BED", "EXIT", "FOOD COURT") so
+# zones are named and typed from the drawing rather than left as anonymous junctions.
+#
+# Separate from requirements-layout.txt because it pulls the ONNX runtime, which roughly
+# doubles the service's resident memory and does not fit alongside OpenCV and scikit-image
+# in a 512MB container. Build with --build-arg WITH_OCR=true where there is room.
+#
+# app/layout/ocr.py imports this inside a try/except, so its absence degrades label
+# reading rather than breaking the pipeline.
+rapidocr-onnxruntime>=1.4

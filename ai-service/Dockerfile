@@ -13,6 +13,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # unavailable, which is the documented degradation rather than a broken service.
 ARG WITH_LAYOUT=true
 
+# Whether to install label reading (rapidocr, and with it the ONNX runtime).
+#
+# Off by default because it roughly doubles resident memory and will not fit a 512MB
+# instance alongside OpenCV and scikit-image. Without it the pipeline still traces a
+# plan from its geometry; it just cannot read the words printed on it. Turn it on
+# where there is room: --build-arg WITH_OCR=true.
+ARG WITH_OCR=false
+
 # libglib2.0-0 is the one system library opencv-python-headless still links against — without
 # it `import cv2` fails at runtime, not at build, so the image looks fine until a plan is
 # uploaded. curl is here for HEALTHCHECK; slim ships neither.
@@ -21,9 +29,10 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # Requirements before source, so editing app/ does not reinstall the dependency tree.
-COPY requirements.txt requirements-layout.txt ./
+COPY requirements.txt requirements-layout.txt requirements-ocr.txt ./
 RUN pip install --no-cache-dir -r requirements.txt \
- && if [ "$WITH_LAYOUT" = "true" ]; then pip install --no-cache-dir -r requirements-layout.txt; fi
+ && if [ "$WITH_LAYOUT" = "true" ]; then pip install --no-cache-dir -r requirements-layout.txt; fi \
+ && if [ "$WITH_OCR" = "true" ]; then pip install --no-cache-dir -r requirements-ocr.txt; fi
 
 COPY app ./app
 
