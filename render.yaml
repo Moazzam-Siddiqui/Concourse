@@ -74,15 +74,13 @@ services:
     plan: free
     region: oregon
     healthCheckPath: /health
-    # No build args here: dockerBuildArgs is not a field Render's blueprint schema accepts,
-    # and it was never needed — ai-service/Dockerfile already defaults ARG WITH_LAYOUT=true,
-    # which is the value we want.
+    # The layout pipeline is switched on by the ARG default in ai-service/Dockerfile, not
+    # from here.
     #
     # OpenCV + scikit-image + RapidOCR in a 512MB instance is the one thing here that may not
-    # fit. If the service is OOM-killed on a layout upload, change that default in the
-    # Dockerfile to false and push: /analyze and /predict/risk keep working, /health reports
-    # layout.available=false, and the UI says AI tracing is unavailable — the documented
-    # degradation rather than a crash.
+    # fit. If the service is OOM-killed on a layout upload, set that default to false and
+    # push: /analyze and /predict/risk keep working, /health reports layout.available=false,
+    # and the UI says AI tracing is unavailable - the documented degradation, not a crash.
     envVars:
       - key: PYTHONUNBUFFERED
         value: "1"
