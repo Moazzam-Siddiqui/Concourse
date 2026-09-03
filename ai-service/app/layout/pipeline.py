@@ -62,14 +62,39 @@ class _Cache:
 CACHE = _Cache()
 
 
+#: Longest edge the pipeline will work at.
+#:
+#: Memory here is quadratic in the long edge and the pipeline holds several full-size
+#: intermediates at once - grey, ink mask, room labels, distance transform, skeleton. A
+#: 4000px plan is roughly four times the working set of a 2000px one, which is the
+#: difference between fitting a small container and being killed by it.
+#:
+#: 2000px is well above what the tracing needs: wall runs and corridor widths are measured
+#: in tens of pixels, so anything past this is detail the geometry stage throws away. The
+#: cap also makes the tuning parameters mean the same thing across plans of different
+#: resolutions, which they did not before.
+MAX_LONG_EDGE = 2000
+
+
 def decode_image(data: bytes) -> np.ndarray:
-    """Decode uploaded bytes to BGR. Raises ValueError on anything unreadable."""
+    """Decode uploaded bytes to BGR, downscaled if very large.
+
+    Raises ValueError on anything unreadable.
+    """
     array = np.frombuffer(data, dtype=np.uint8)
     image = cv2.imdecode(array, cv2.IMREAD_COLOR)
     if image is None:
         raise ValueError("Could not decode image. Supported formats: PNG, JPG, JPEG.")
     if image.shape[0] < 64 or image.shape[1] < 64:
         raise ValueError("Image is too small to contain a readable floor plan.")
+
+    long_edge = max(image.shape[0], image.shape[1])
+    if long_edge > MAX_LONG_EDGE:
+        scale = MAX_LONG_EDGE / long_edge
+        # INTER_AREA is the right filter for shrinking: it averages the pixels being
+        # merged rather than sampling one of them, so thin walls survive as thin walls
+        # instead of dropping out between samples.
+        image = cv2.resize(image, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
     return image
 
 

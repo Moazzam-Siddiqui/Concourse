@@ -183,9 +183,13 @@ async def preview_mask(
     if not data:
         raise HTTPException(status_code=400, detail="Empty upload.")
 
-    image = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
-    if image is None:
-        raise HTTPException(status_code=422, detail="Could not decode that image.")
+    # Through decode_image, not cv2 directly: this path had its own decode and so skipped
+    # the size cap, meaning a large upload could exhaust the container here even though
+    # the parse path was protected.
+    try:
+        image = pipeline.decode_image(data)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     tuning = RoomTuning(
         wall_run_px=wall_run_px,
