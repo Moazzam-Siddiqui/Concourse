@@ -26,14 +26,13 @@ does today: OCR labels if available, geometry alone if not.
 from __future__ import annotations
 
 import base64
-import json
 import logging
 import os
 
 import httpx
 
 from app.layout.schemas import Canvas, SemanticLayout
-from app.layout.vlm import _PROMPT, parse_semantic_json
+from app.layout.vlm import _PROMPT, _extract_json, parse_semantic_json
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +42,11 @@ PROVIDER = os.getenv("LAYOUT_VLM_PROVIDER", "groq").strip().lower()
 #: which matters: the prompt asks for a bare object and these models otherwise wrap it in
 #: markdown fences that then have to be stripped back off.
 _DEFAULT_MODEL = {
-    "groq": "qwen/qwen3.6-27b",
+    # 3.8, not 3.6. Both read the plan correctly, but 3.6 emits a <think> block before the
+    # object: under strict JSON mode Groq rejects its own generation and returns
+    # json_validate_failed with an empty body, and without strict mode the reply is prose
+    # wrapped around JSON. 3.8's instruct behaviour answers with the object.
+    "groq": "qwen/qwen3.8-27b",
     "gemini": "gemini-2.0-flash",
 }
 
@@ -88,7 +91,10 @@ def _call_groq(image_png: bytes, key: str) -> str:
             ],
         }],
         "temperature": 0.1,
-        "response_format": {"type": "json_object"},
+        # No response_format here. Strict JSON mode makes the reasoning models fail the
+        # whole request rather than answer imperfectly, and _extract_json already pulls an
+        # object out of a reply that carries prose or fences around it. Being tolerant of a
+        # messy reply beats being rejected by a strict one.
     }
     with httpx.Client(timeout=TIMEOUT_S) as client:
         reply = client.post(
@@ -137,7 +143,12 @@ def describe(image_png: bytes, canvas: Canvas) -> SemanticLayout:
 
     try:
         text = (_call_groq if PROVIDER == "groq" else _call_gemini)(image_png, key)
-        return parse_semantic_json(json.loads(text), canvas)
+        payload = _extract_json(text)
+        if payload is None:
+            log.warning("Hosted VLM (%s) returned no JSON object; tracing without semantics",
+                        PROVIDER)
+            return SemanticLayout(canvas=canvas, degraded=True)
+        return parse_semantic_json(payload, canvas)
     except httpx.HTTPStatusError as exc:
         # Truncated on purpose: an error from either API can echo the request back, and
         # that includes the base64 of the entire floor plan.
