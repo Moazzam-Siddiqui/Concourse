@@ -19,7 +19,11 @@ ARG WITH_LAYOUT=true
 # instance alongside OpenCV and scikit-image. Without it the pipeline still traces a
 # plan from its geometry; it just cannot read the words printed on it. Turn it on
 # where there is room: --build-arg WITH_OCR=true.
-ARG WITH_OCR=false
+# Turned back on: without it zones are never named, so a plan traces into anonymous
+# junctions and everything downstream that keys off a zone's type is guessing. If the
+# service is OOM-killed on a parse, set this to false again - tracing survives, naming
+# does not.
+ARG WITH_OCR=true
 
 # libglib2.0-0 is the one system library opencv-python-headless still links against — without
 # it `import cv2` fails at runtime, not at build, so the image looks fine until a plan is
