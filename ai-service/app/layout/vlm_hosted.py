@@ -3,20 +3,24 @@
 `vlm.py` loads Qwen2.5-VL into this process, which needs several gigabytes and a GPU to be
 worth using. That is fine on a workstation and impossible on a small container: the free
 instance this service runs on has 512MB, which is not enough for the OCR models, let alone
-a VLM.
+a VLM. That is why plans currently trace with no semantics at all.
 
-Sending the image to a hosted model instead costs no local memory at all. The request is
-one HTTPS call, the reply is the same JSON contract `vlm.py` already defines, and
+Sending the image to a hosted model instead costs no local memory. The request is one
+HTTPS call, the reply is the same JSON contract `vlm.py` already defines, and
 `parse_semantic_json` turns it into the same `SemanticLayout`. Everything downstream is
 unchanged — including `geometry.build_walkable_mask`, which takes the semantic layout as an
-input, so better zone understanding improves the traced corridors and not only their names.
+input, so better zone understanding moves the traced corridors and does not only rename
+them.
 
-Off unless `LAYOUT_VLM_API_KEY` is set. With no key the pipeline behaves exactly as it does
-today: OCR labels if they are available, geometry alone if they are not.
+Two providers, because they fail differently and it is useful to be able to switch:
 
-Gemini is the default provider because its free tier is genuinely usable for this — a
-floor plan is one image and a few hundred tokens of reply — and because it reads text in
-images well, which is the half of the job OCR is otherwise doing.
+  groq    (default) OpenAI-compatible chat completions. Fast, free tier, and the vision
+          models are Qwen — the same family the local path uses, so the prompt behaves
+          the way it was written to.
+  gemini  Google's endpoint. Different shape, same contract.
+
+Off unless `LAYOUT_VLM_API_KEY` is set. With no key the pipeline behaves exactly as it
+does today: OCR labels if available, geometry alone if not.
 """
 
 from __future__ import annotations
@@ -33,42 +37,71 @@ from app.layout.vlm import _PROMPT, parse_semantic_json
 
 log = logging.getLogger(__name__)
 
-#: Model to call. Any vision-capable Gemini model works; flash is the cheap, fast one and
-#: is what the free tier is generous with.
-MODEL = os.getenv("LAYOUT_VLM_MODEL_HOSTED", "gemini-2.0-flash")
+PROVIDER = os.getenv("LAYOUT_VLM_PROVIDER", "groq").strip().lower()
 
-#: A floor plan is a single image and a short structured reply, so this is a small request.
-#: The timeout is generous because the caller is already waiting on a trace that takes
-#: seconds, and a slow answer is still far better than no semantics.
+#: Defaults per provider. Both are vision-capable and both support a JSON response mode,
+#: which matters: the prompt asks for a bare object and these models otherwise wrap it in
+#: markdown fences that then have to be stripped back off.
+_DEFAULT_MODEL = {
+    "groq": "qwen/qwen3.6-27b",
+    "gemini": "gemini-2.0-flash",
+}
+
+MODEL = os.getenv("LAYOUT_VLM_MODEL_HOSTED", "").strip() or _DEFAULT_MODEL.get(PROVIDER, "")
+
+#: Generous, because the caller is already waiting on a trace that takes seconds and a slow
+#: answer is still far better than none.
 TIMEOUT_S = float(os.getenv("LAYOUT_VLM_TIMEOUT_S", "45"))
+
+
+def _key() -> str:
+    return os.environ.get("LAYOUT_VLM_API_KEY", "").strip()
 
 
 def configured() -> bool:
     """True when a key is present. Everything here is inert without one."""
-    return bool(os.environ.get("LAYOUT_VLM_API_KEY", "").strip())
+    return bool(_key()) and PROVIDER in _DEFAULT_MODEL
 
 
 def status() -> dict:
     """One line for /health, so it is obvious from outside which path is running."""
-    if not configured():
-        return {"enabled": False, "model": None, "error": "LAYOUT_VLM_API_KEY not set"}
-    return {"enabled": True, "model": MODEL, "error": None}
+    if PROVIDER not in _DEFAULT_MODEL:
+        return {"enabled": False, "provider": PROVIDER, "model": None,
+                "error": f"unknown provider {PROVIDER!r}; use groq or gemini"}
+    if not _key():
+        return {"enabled": False, "provider": PROVIDER, "model": None,
+                "error": "LAYOUT_VLM_API_KEY not set"}
+    return {"enabled": True, "provider": PROVIDER, "model": MODEL, "error": None}
 
 
-def describe(image_png: bytes, canvas: Canvas) -> SemanticLayout:
-    """Ask the hosted model to read the plan.
+def _call_groq(image_png: bytes, key: str) -> str:
+    """OpenAI-compatible chat completions with the image inline as a data URL."""
+    b64 = base64.b64encode(image_png).decode("ascii")
+    body = {
+        "model": MODEL,
+        "messages": [{
+            "role": "user",
+            "content": [
+                {"type": "text", "text": _PROMPT},
+                {"type": "image_url",
+                 "image_url": {"url": f"data:image/png;base64,{b64}"}},
+            ],
+        }],
+        "temperature": 0.1,
+        "response_format": {"type": "json_object"},
+    }
+    with httpx.Client(timeout=TIMEOUT_S) as client:
+        reply = client.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={"Authorization": f"Bearer {key}"},
+            json=body,
+        )
+    reply.raise_for_status()
+    return reply.json()["choices"][0]["message"]["content"]
 
-    Returns a degraded layout on any failure rather than raising: a semantic stage that
-    cannot answer must leave the trace running on geometry alone, exactly as it does when
-    no model is configured at all. A floor plan that traces without names is useful; an
-    exception that kills the upload is not.
-    """
-    key = os.environ.get("LAYOUT_VLM_API_KEY", "").strip()
-    if not key:
-        return SemanticLayout(canvas=canvas, degraded=True)
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent"
-    payload = {
+def _call_gemini(image_png: bytes, key: str) -> str:
+    body = {
         "contents": [{
             "parts": [
                 {"text": _PROMPT},
@@ -78,23 +111,38 @@ def describe(image_png: bytes, canvas: Canvas) -> SemanticLayout:
                 }},
             ],
         }],
-        # The prompt asks for JSON and nothing else; asking the API to enforce that removes
-        # the markdown fences these models otherwise wrap it in.
         "generationConfig": {"temperature": 0.1, "response_mime_type": "application/json"},
     }
+    with httpx.Client(timeout=TIMEOUT_S) as client:
+        reply = client.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent",
+            params={"key": key},
+            json=body,
+        )
+    reply.raise_for_status()
+    return reply.json()["candidates"][0]["content"]["parts"][0]["text"]
+
+
+def describe(image_png: bytes, canvas: Canvas) -> SemanticLayout:
+    """Ask the hosted model to read the plan.
+
+    Returns a degraded layout on any failure rather than raising: a semantic stage that
+    cannot answer must leave the trace running on geometry alone, exactly as it does when
+    no model is configured. A plan that traces without names is useful; an exception that
+    kills the upload is not.
+    """
+    key = _key()
+    if not key or PROVIDER not in _DEFAULT_MODEL:
+        return SemanticLayout(canvas=canvas, degraded=True)
 
     try:
-        with httpx.Client(timeout=TIMEOUT_S) as client:
-            reply = client.post(url, params={"key": key}, json=payload)
-        if reply.status_code != 200:
-            # Body is truncated on purpose: an error from this API can carry the request
-            # back verbatim, and that includes the base64 of the whole floor plan.
-            log.warning("Hosted VLM returned %s: %s", reply.status_code, reply.text[:200])
-            return SemanticLayout(canvas=canvas, degraded=True)
-
-        body = reply.json()
-        text = body["candidates"][0]["content"]["parts"][0]["text"]
+        text = (_call_groq if PROVIDER == "groq" else _call_gemini)(image_png, key)
         return parse_semantic_json(json.loads(text), canvas)
+    except httpx.HTTPStatusError as exc:
+        # Truncated on purpose: an error from either API can echo the request back, and
+        # that includes the base64 of the entire floor plan.
+        log.warning("Hosted VLM (%s) returned %s: %s",
+                    PROVIDER, exc.response.status_code, exc.response.text[:200])
     except Exception as exc:  # noqa: BLE001 - any failure degrades, none propagates
-        log.warning("Hosted VLM call failed (%s); tracing without semantics", exc)
-        return SemanticLayout(canvas=canvas, degraded=True)
+        log.warning("Hosted VLM (%s) failed (%s); tracing without semantics", PROVIDER, exc)
+    return SemanticLayout(canvas=canvas, degraded=True)
