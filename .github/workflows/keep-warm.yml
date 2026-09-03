@@ -1,0 +1,40 @@
+# Keeps the free Render services from sleeping.
+#
+# Render stops a free instance after 15 minutes without traffic and takes roughly 50
+# seconds to bring it back. The wake is automatic — a request triggers it, nobody has to
+# press anything — but the request that triggers it is the one that waits, so the first
+# person to open the site sits watching a spinner, and a fetch with a shorter timeout than
+# the wake gives up and reports the service as unreachable.
+#
+# This pings both services on a schedule so there is always recent traffic and the instance
+# is already up when a real visitor arrives.
+#
+# Ten minutes, not fifteen: the window is measured from the last request, and GitHub's
+# scheduler is best-effort and routinely runs several minutes late. A 15-minute interval
+# would drift past the threshold and let the service sleep anyway.
+name: keep-warm
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:        # so it can be triggered by hand before a demo
+
+# Never fail the repo's checks over this. A ping that misses is a slow page load, not a
+# broken build, and a red X on the commit list for an unreachable free instance would be
+# noise that trains you to ignore the checks that matter.
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Wake the backend
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 90 \
+            https://concourse-backend.onrender.com/actuator/health || echo "timeout")
+          echo "backend: $code"
+
+      - name: Wake the AI service
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 90 \
+            https://concourse-ai-adup.onrender.com/health || echo "timeout")
+          echo "ai-service: $code"

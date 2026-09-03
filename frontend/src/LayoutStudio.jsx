@@ -21,8 +21,12 @@ import {
 // backend, so it needs its own base URL - and the same production default as src/api.js.
 // A deployed build falling back to localhost asks each visitor's own machine to trace
 // their floor plan, which fails as "Can't reach the AI service at http://localhost:8000".
-const API_BASE = import.meta?.env?.VITE_AI_SERVICE_URL
-  ?? (import.meta?.env?.PROD ? "https://concourse-ai-adup.onrender.com" : "http://localhost:8000");
+// No optional chaining on these. Vite substitutes `import.meta.env.X` by matching that
+// exact text, so `import.meta?.env?.PROD` is left as a runtime lookup instead of being
+// replaced with `true` - and it then evaluated falsy in the browser, sending a deployed
+// page to localhost. The plain form folds to a constant at build time.
+const API_BASE = import.meta.env.VITE_AI_SERVICE_URL
+  ?? (import.meta.env.PROD ? "https://concourse-ai-adup.onrender.com" : "http://localhost:8000");
 
 const NODE_TYPES = ["GATE", "WALKWAY", "CONCESSION", "SEATING", "EXIT"];
 
