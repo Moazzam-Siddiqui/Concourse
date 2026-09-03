@@ -221,7 +221,12 @@ export default function LayoutStudio({ onConfirmed, initialFile = null }) {
     } catch (e) {
       setError(
         e.message === "Failed to fetch"
-          ? `Can't reach the AI service at ${API_BASE}. Is it running on port 8000?`
+          // "Is it running on port 8000?" only ever made sense against a local service.
+          // Deployed, the same failure means the host is asleep, waking, or unreachable -
+          // and a free instance takes about fifty seconds to come back, which is long
+          // enough that the first attempt after an idle period will always fail.
+          ? `Can't reach the AI service at ${API_BASE}. If it has been idle it may still be `
+            + `waking up — wait a few seconds and try again.`
           : e.message,
       );
     } finally {
