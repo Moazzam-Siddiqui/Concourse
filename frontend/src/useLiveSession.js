@@ -7,9 +7,20 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+// Derived from whatever api.js resolved, rather than re-deriving it here.
+//
+// This used to fall back to VITE_API_BASE_URL and then to localhost independently, so a
+// production build with that variable unset opened a socket to ws://localhost:8080 - the
+// visitor's own machine. The session was created on the server and ticking, but the page
+// never received a frame: it showed OFFLINE and TICK 0 forever, which reads as a broken
+// simulation rather than as a failed connection.
+//
+// Reading api.baseUrl means the socket and the REST calls can never disagree about which
+// backend they are talking to. The replace turns https into wss, and http into ws.
+import { api } from './api.js';
+
 const WS_BASE =
-  import.meta.env.VITE_WS_BASE_URL ??
-  (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080').replace(/^http/, 'ws');
+  import.meta.env.VITE_WS_BASE_URL ?? api.baseUrl.replace(/^http/, 'ws');
 
 /** Reconnect backoff in ms. Caps out rather than growing forever. */
 const RETRY_MS = [500, 1000, 2000, 4000, 8000];
