@@ -25,11 +25,24 @@ ARG WITH_LAYOUT=true
 # does not.
 ARG WITH_OCR=true
 
-# libglib2.0-0 is the one system library opencv-python-headless still links against — without
-# it `import cv2` fails at runtime, not at build, so the image looks fine until a plan is
-# uploaded. curl is here for HEALTHCHECK; slim ships neither.
+# System libraries the vision stack links against. Every one of these fails at RUNTIME,
+# not at build, so the image looks healthy until a plan is uploaded.
+#
+#   libglib2.0-0                       opencv-python-headless
+#   libxcb1, libgl1, libsm6, libxext6  rapidocr-onnxruntime depends on full
+#                                      opencv-python, not the headless build, and
+#                                      that links X11 and OpenGL even though nothing
+#                                      here ever opens a window.
+#
+# Their absence surfaces as "ImportError: libxcb.so.1: cannot open shared object file"
+# and the whole layout pipeline reporting itself unavailable. This is what actually
+# broke this service's first deploy; it was read as the 512MB memory limit and OCR
+# was removed to compensate, which fixed the symptom by deleting the feature.
+#
+# curl is here for HEALTHCHECK; slim ships none of it.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends libglib2.0-0 curl \
+ && apt-get install -y --no-install-recommends \
+      libglib2.0-0 libxcb1 libgl1 libsm6 libxext6 curl \
  && rm -rf /var/lib/apt/lists/*
 
 # Requirements before source, so editing app/ does not reinstall the dependency tree.
