@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 import cv2
 import numpy as np
 
-from app.layout import geometry, graph as graph_mod, ocr, rooms as rooms_mod, validate
+from app.layout import geometry, graph as graph_mod, ocr, rooms as rooms_mod, validate, vlm_hosted
 from app.layout.rooms import RoomTuning
 from app.layout.schemas import (
     Canvas,
@@ -150,7 +150,20 @@ def parse_layout(
         # to re-guess words that were printed in the image, and read correctly a moment
         # ago, is pure cost — and its guesses are less reliable than the text itself.
         t0 = time.perf_counter()
-        if use_vlm and not ocr_semantic.zones:
+        if vlm_hosted.configured() and not ocr_semantic.zones:
+            # A hosted model first, when one is configured. It costs this process no
+            # memory, which is the only reason semantics are possible at all on a small
+            # container - the local VLM needs gigabytes and OCR alone does not fit either.
+            #
+            # This matters beyond naming: build_walkable_mask takes the semantic layout as
+            # an input, so knowing which regions are halls and which are rooms changes
+            # where corridors are traced, not just what they are called.
+            ok, buf = cv2.imencode(".png", image_bgr)
+            semantic = (vlm_hosted.describe(buf.tobytes(), canvas) if ok
+                        else SemanticLayout(canvas=canvas, degraded=True))
+            vlm_used = not semantic.degraded
+            vlm_model = vlm_hosted.MODEL if vlm_used else None
+        elif use_vlm and not ocr_semantic.zones:
             rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
             with VlmSession() as vlm:
                 semantic = vlm.describe(rgb, canvas)
