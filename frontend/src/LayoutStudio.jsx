@@ -17,7 +17,12 @@ import {
  * at the same scale with no transform maths.
  */
 
-const API_BASE = import.meta?.env?.VITE_AI_SERVICE_URL ?? "http://localhost:8000";
+// This screen talks to the AI service directly from the browser rather than through the
+// backend, so it needs its own base URL - and the same production default as src/api.js.
+// A deployed build falling back to localhost asks each visitor's own machine to trace
+// their floor plan, which fails as "Can't reach the AI service at http://localhost:8000".
+const API_BASE = import.meta?.env?.VITE_AI_SERVICE_URL
+  ?? (import.meta?.env?.PROD ? "https://concourse-ai-adup.onrender.com" : "http://localhost:8000");
 
 const NODE_TYPES = ["GATE", "WALKWAY", "CONCESSION", "SEATING", "EXIT"];
 
