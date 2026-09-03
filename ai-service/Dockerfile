@@ -19,11 +19,21 @@ ARG WITH_LAYOUT=true
 # instance alongside OpenCV and scikit-image. Without it the pipeline still traces a
 # plan from its geometry; it just cannot read the words printed on it. Turn it on
 # where there is room: --build-arg WITH_OCR=true.
-# Turned back on: without it zones are never named, so a plan traces into anonymous
-# junctions and everything downstream that keys off a zone's type is guessing. If the
-# service is OOM-killed on a parse, set this to false again - tracing survives, naming
-# does not.
-ARG WITH_OCR=true
+# Off, and this time measured rather than assumed.
+#
+# With it installed the service starts fine and reports layout.available=true, then a
+# single /layout/parse kills the container: the request returns 503 in under a second, the
+# instance restarts, and the caller sits on "Reading the plan..." forever because the
+# process handling it is gone. RapidOCR loads its detection and recognition models on
+# first use, and that on top of OpenCV and scikit-image does not fit 512MB.
+#
+# The earlier libxcb failure was a separate, real bug and its fix stays: those system
+# libraries are needed whenever opencv-python is present, and turning this arg on is now
+# a supported thing to do on an instance with room for it.
+#
+# Tracing survives without OCR. Naming does not: zones come back unnamed rather than
+# labelled from the words printed on the plan.
+ARG WITH_OCR=false
 
 # System libraries the vision stack links against. Every one of these fails at RUNTIME,
 # not at build, so the image looks healthy until a plan is uploaded.
